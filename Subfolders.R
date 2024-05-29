@@ -2,7 +2,7 @@
 
 dir.create("R")
 dir.create("Data")
-dir.create("Ouptput")
-dir.create("Ouptput/Data")
-dir.create("Ouptput/Data/csv")
-dir.create("Ouptput/Plots")
+dir.create("Output")
+dir.create("Output/Data")
+dir.create("Output/Data/csv")
+dir.create("Output/Plots")
