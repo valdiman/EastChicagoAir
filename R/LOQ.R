@@ -2,13 +2,11 @@
 # Install packages
 install.packages("readxl")
 install.packages("dplyr")
-install.packages("ggplot2")
 
 # Library
 {
   library(readxl) # to read excel files
   library(dplyr)
-  library(ggplot2)
 }
 
 # Read Excel data ---------------------------------------------------------
@@ -123,15 +121,15 @@ sample.a <- sapply(subset(a, In.Out %in% c("IN", "OUT"))[, pcb_columns],
 
 # Log10 transformation excluding zeros
 log10_sample.a <- as.matrix(log10(sample.a))
-log10_sample.a[log10_sample.a == -Inf] <- NA
+#log10_sample.a[log10_sample.a == -Inf] <- NA
 
 # Perform the comparison and assignment using vectorized operations per column
 sample.a.2 <- matrix(0, nrow = nrow(log10_sample.a), ncol = ncol(log10_sample.a))
 colnames(sample.a.2) <- colnames(log10_sample.a)
 
-for (j in 1:ncol(log10_sample.a)) {
+for (j in 1:ncol(sample.a.2)) {
   sample.a.2[, j] <- ifelse(log10_sample.a[, j] > loq.a[j],
-                            10^log10_sample.a[, j], 0)
+                            10^log10_sample.a[, j], NA)
 }
 
 
