@@ -152,14 +152,19 @@ for (j in 1:ncol(sample.a.c)) {
 }
 
 # Add metadata
-sample.a.c <- cbind(sample.a.0[, c("In.Out", "Date.Placed",
-                                   "Date.Collected..shipment.date.for.FB", "SSOCB13C.3")],
-                    sample.a.c)
-                    
-                    $In.Out, sample.a.0$Date.Placed,
+# Get the column indices for the range of columns in sample.a.0
+cols_to_add <- which(names(sample.a.0) == "SSPCB13C.3"):which(names(sample.a.0) == "SSPCB166")
+sample.a.c <- cbind(sample.a.0[, cols_to_add], sample.a.c)
+sample.a.c <- cbind(sample.a.0$In.Out, sample.a.0$Date.Placed,
                     sample.a.0$Date.Collected..shipment.date.for.FB.,
-                    sample.a.0$SSPCB13C.3,
                     sample.a.c)
+# Rename the first three columns of sample.a.c
+colnames(sample.a.c)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+# Convert the column to Date format
+sample.a.c$DateDeploy <- as.Date(as.numeric(sample.a.c$DateDeploy),
+                                  origin = "1899-12-30")
+sample.a.c$DateCollect <- as.Date(as.numeric(sample.a.c$DateCollect),
+                                 origin = "1899-12-30")
 
 # (2) below loq -> loq/(2)^0.5
 sample.a.c.2 <- matrix(NA, nrow = nrow(log10sample.a), ncol = ncol(log10sample.a))
@@ -178,6 +183,19 @@ for (j in 1:ncol(sample.a.c.2)) {
   }
 }
 
+# Add metadata
+sample.a.c.2 <- cbind(sample.a.0[, cols_to_add], sample.a.c.2)
+sample.a.c.2 <- cbind(sample.a.0$In.Out, sample.a.0$Date.Placed,
+                    sample.a.0$Date.Collected..shipment.date.for.FB.,
+                    sample.a.c.2)
+# Rename the first three columns of sample.a.c
+colnames(sample.a.c.2)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+# Convert the column to Date format
+sample.a.c.2$DateDeploy <- as.Date(as.numeric(sample.a.c.2$DateDeploy),
+                                 origin = "1899-12-30")
+sample.a.c.2$DateCollect <- as.Date(as.numeric(sample.a.c.2$DateCollect),
+                                  origin = "1899-12-30")
+
 # Export results
 write.csv(sample.a.c, file = "Output/Data/csv/Sample_aV01.csv",
           row.names = FALSE)
@@ -185,7 +203,8 @@ write.csv(sample.a.c.2, file = "Output/Data/csv/Sample_aV02.csv",
           row.names = FALSE)
 
 # Select samples from m, subset only PCBs, and convert to numeric
-sample.m <- sapply(subset(m, In.Out %in% c("IN", "OUT"))[, pcb_columns],
+sample.m.0 <- subset(m, In.Out %in% c("IN", "outdoor"))
+sample.m <- sapply(subset(m, In.Out %in% c("IN", "outdoor"))[, pcb_columns],
                    as.numeric)
 # Log10 transformation excluding zeros and replacing with NA
 log10sample.m <- as.matrix(log10(ifelse(sample.m == 0, NA, sample.m)))
@@ -214,6 +233,21 @@ for (j in 1:ncol(sample.m.c)) {
   }
 }
 
+# Add metadata
+# Get the column indices for the range of columns in sample.a.0
+cols_to_add <- which(names(sample.m.0) == "SSPCB13C.3"):which(names(sample.m.0) == "SSPCB166")
+sample.m.c <- cbind(sample.m.0[, cols_to_add], sample.m.c)
+sample.m.c <- cbind(sample.m.0$In.Out, sample.m.0$Date.Placed,
+                    sample.m.0$Date.Collected..shipment.date.for.FB.,
+                    sample.m.c)
+# Rename the first three columns of sample.a.c
+colnames(sample.m.c)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+# Convert the column to Date format
+sample.m.c$DateDeploy <- as.Date(as.numeric(sample.m.c$DateDeploy),
+                                 origin = "1899-12-30")
+sample.m.c$DateCollect <- as.Date(as.numeric(sample.m.c$DateCollect),
+                                  origin = "1899-12-30")
+
 # (2) below loq -> loq/(2)^0.5
 sample.m.c.2 <- matrix(NA, nrow = nrow(log10sample.m), ncol = ncol(log10sample.m))
 colnames(sample.m.c.2) <- colnames(log10sample.m)
@@ -231,6 +265,22 @@ for (j in 1:ncol(sample.m.c.2)) {
   }
 }
 
+# Add metadata
+sample.m.c.2 <- cbind(sample.m.0[, cols_to_add], sample.m.c.2)
+sample.m.c.2 <- cbind(sample.m.0$In.Out, sample.m.0$Date.Placed,
+                    sample.m.0$Date.Collected..shipment.date.for.FB.,
+                    sample.m.c.2)
+# Rename the first three columns of sample.a.c
+colnames(sample.m.c.2)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+# Convert the column to Date format
+sample.m.c.2$DateDeploy <- as.Date(as.numeric(sample.m.c.2$DateDeploy),
+                                 origin = "1899-12-30")
+sample.m.c.2$DateCollect <- as.Date(as.numeric(sample.m.c.2$DateCollect),
+                                  origin = "1899-12-30")
+
 # Export results
-write.csv(sample.m.2, file = "Output/Data/csv/Sample_m.csv",
+write.csv(sample.m.c, file = "Output/Data/csv/Sample_mV01.csv",
           row.names = FALSE)
+write.csv(sample.m.c.2, file = "Output/Data/csv/Sample_mV02.csv",
+          row.names = FALSE)
+
