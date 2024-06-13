@@ -71,6 +71,7 @@ names(p_values) <- names(blank.m)
 # Select p-values greater than 0.05
 p_values_normal <- p_values[p_values > 0.05] # 42% show normality via this test
 
+# Plot
 # Apply the function to each PCB column with its name
 invisible(lapply(names(blank.m), function(col_name) {
   plot_qq(blank.m[[col_name]], col_name)
@@ -84,7 +85,7 @@ names(p_values_log10) <- names(blank.m)
 # Select p-values greater than 0.05
 p_values_normal_log10 <- p_values_log10[p_values_log10 > 0.05] # 96% show normality via this test
 
-#Plot
+# Plot
 # Apply the function to each column
 invisible(lapply(names(blank.m), function(col_name) {
   plot_qq(log10(blank.m[[col_name]]), col_name)
@@ -92,7 +93,7 @@ invisible(lapply(names(blank.m), function(col_name) {
 
 # Calculate LOQ -----------------------------------------------------------
 # Better option to use log10 data to calculate LOQ
-# Create LOQ for a, i.e., upper 95 CI% (mean + 1.96*sd/(n)^0.5)
+# Create LOQ for "a", i.e., upper 95 CI% (mean + 1.96*sd/(n)^0.5)
 log10blank.a <- log10(blank.a) # log10 blank data
 loq.a <- colMeans(log10blank.a,
                   na.rm = TRUE) + 1.96*sapply(log10blank.a,
@@ -104,7 +105,7 @@ any(loq.a == -Inf)
 # Convert loq.a to a numeric vector
 loq.a <- as.numeric(loq.a)
 
-# Create LOQ for m, i.e., upper 95 CI% (mean + 1.96*sd/(n)^0.5)
+# Create LOQ for "m", i.e., upper 95 CI% (mean + 1.96*sd/(n)^0.5)
 log10blank.m <- log10(blank.m) # log10 blank data
 # Replace -Inf with NA for PCBs14 and 128+166
 log10blank.m[log10blank.m == -Inf] <- NA
@@ -133,7 +134,7 @@ any(is.nan(log10sample.a)) # False
 log10sample.a[log10sample.a == -Inf] <- NA
 any(log10sample.a == -Inf) # true
 
-# Perform the comparison a
+# Perform the comparison "a"
 # (1) below loq -> 0
 sample.a.c <- matrix(NA, nrow = nrow(log10sample.a), ncol = ncol(log10sample.a))
 colnames(sample.a.c) <- colnames(log10sample.a)
@@ -197,12 +198,14 @@ sample.a.c.2$DateCollect <- as.Date(as.numeric(sample.a.c.2$DateCollect),
                                   origin = "1899-12-30")
 
 # Export results
+# Loq = 0
 write.csv(sample.a.c, file = "Output/Data/csv/Sample_aV01.csv",
           row.names = FALSE)
+# Loq = loq/(2)^0.5
 write.csv(sample.a.c.2, file = "Output/Data/csv/Sample_aV02.csv",
           row.names = FALSE)
 
-# Select samples from m, subset only PCBs, and convert to numeric
+# Select samples from "m", subset only PCBs, and convert to numeric
 sample.m.0 <- subset(m, In.Out %in% c("IN", "outdoor"))
 sample.m <- sapply(subset(m, In.Out %in% c("IN", "outdoor"))[, pcb_columns],
                    as.numeric)
