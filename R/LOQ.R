@@ -2,11 +2,13 @@
 # Install packages
 install.packages("readxl")
 install.packages("dplyr")
+install.packages("ggplot2")
 
 # Library
 {
   library(readxl) # to read excel files
   library(dplyr)
+  library(ggplot2)
 }
 
 # Read Excel data ---------------------------------------------------------
@@ -119,6 +121,41 @@ any(loq.m == -Inf)
 # Convert loq.a to a numeric vector
 loq.m <- as.numeric(loq.m)
 
+# Plot LOQ ----------------------------------------------------------------
+# Create data frames and add PCB names
+loq.a_df <- data.frame(PCB = pcb_columns, LOQ = loq.a, Type = "loq.a")
+loq.m_df <- data.frame(PCB = pcb_columns, LOQ = loq.m, Type = "loq.m")
+# Combine the data frames
+plot_loq_combined <- rbind(loq.a_df, loq.m_df)
+plot_loq_combined$PCB <- gsub('\\.', '+', plot_loq_combined$PCB) # replace dot for +
+plot_loq_combined$PCB <- factor(plot_loq_combined$PCB,
+                                levels = unique(plot_loq_combined$PCB))
+
+# Create the bar plot
+plot.loqs <- ggplot(data = plot_loq_combined, aes(x = PCB, y = 10^(LOQ), fill = Type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  theme(aspect.ratio = 25/135) +
+  xlab(expression("")) +
+  ylab(expression(bold("LOQ values (ng/PUF)"))) +
+  theme(axis.text.y = element_text(face = "bold", size = 8,
+                                   color = "black"),
+        axis.title.y = element_text(face = "bold", size = 8,
+                                    color = "black")) +
+  theme(axis.text.x = element_text(face = "bold", size = 4,
+                                   angle = 60, hjust = 1,
+                                   color = "black")) +
+  theme(axis.ticks = element_line(linewidth = 0.6, color = "black"), 
+        axis.ticks.length = unit(0.2, "cm")) +
+  scale_fill_manual(values = c("loq.a" = "blue", "loq.m" = "red"))
+
+# See plot
+plot.loqs
+
+# Save plot in folder
+ggsave("Output/Plots/LOQs.png", plot = plot.loqs, width = 10,
+       height = 5, dpi = 300)
+
 # Samples vs LOQ (masses) -------------------------------------------------
 # Select samples from a, subset only PCBs, and convert to numeric
 sample.a.0 <- subset(a, In.Out %in% c("IN", "OUT"))
@@ -147,7 +184,7 @@ for (j in 1:ncol(sample.a.c)) {
         sample.a.c[i, j] <- 0
       }
     } else {
-      sample.a.c[i, j] <- NA
+      sample.a.c[i, j] <- 0
     }
   }
 }
@@ -179,7 +216,7 @@ for (j in 1:ncol(sample.a.c.2)) {
         sample.a.c.2[i, j] <- 10^(loq.a[j]/sqrt(2))
       }
     } else {
-      sample.a.c.2[i, j] <- NA
+      sample.a.c.2[i, j] <- 10^(loq.a[j]/sqrt(2))
     }
   }
 }
@@ -231,7 +268,7 @@ for (j in 1:ncol(sample.m.c)) {
         sample.m.c[i, j] <- 0
       }
     } else {
-      sample.m.c[i, j] <- NA
+      sample.m.c[i, j] <- 0
     }
   }
 }
@@ -263,7 +300,7 @@ for (j in 1:ncol(sample.m.c.2)) {
         sample.m.c.2[i, j] <- 10^(loq.m[j]/sqrt(2))
       }
     } else {
-      sample.m.c.2[i, j] <- NA
+      sample.m.c.2[i, j] <- 10^(loq.m[j]/sqrt(2))
     }
   }
 }
