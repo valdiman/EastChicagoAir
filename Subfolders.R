@@ -1,6 +1,7 @@
 # Code to create sub folders
 
 dir.create("R")
+dir.create("R/PUFPASModel")
 dir.create("Data")
 dir.create("Data/PUFPASModel")
 dir.create("Output")
