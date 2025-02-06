@@ -31,8 +31,8 @@ install.packages('R.utils')
 # station information. 
 # Station ID: XXXXXXXXXXX need to add "-" after the sixth digit.
 metdataID <- "725340-14819"  # Example ID 725300-94846 O'Hare Chicago
-start_year <- 2012         # Start year
-num_years <- 3 # Number of years to include (start_year + 1)
+start_year <- 2018          # Start year
+num_years <- 3               # Number of years to include (start_year + 1)
 
 # Functions ---------------------------------------------------------------
 # Generate a sequence of years
