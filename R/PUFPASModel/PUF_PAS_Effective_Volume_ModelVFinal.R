@@ -233,13 +233,13 @@ PUF_PAS_Effective_Volume_Calculations <- function(start_date, end_date, met_data
 
 # Run the Model -----------------------------------------------------------
 PUF_PAS_Effective_Volume_Calculations(
-  start_date = "2018-12-01 01:00:00", 
-  end_date = "2019-01-10 01:00:00", 
+  start_date = "2013-01-24 01:00:00", 
+  end_date = "2013-06-13 01:00:00", 
   # Need to select the folder and name of the file where the met data is stored
-  met_data_path = "Output/Data/isd_light/725300-94846/725300-94846-2018-2-filled.csv", 
-  pcb_properties_path = "Data/PCB_Properties_MW_DU_KOA.csv", 
-  pcb_ppLFER_path = "Data/PCB_LFER_descriptors.csv", 
+  met_data_path = "Output/PUFPASModel/Meteo/isd_light/725340-14819/725340-14819-2011-4-filled.csv", 
+  pcb_properties_path = "Data/PUFPASModel/PCB_Properties_MW_DU_KOA.csv", 
+  pcb_ppLFER_path = "Data/PUFPASModel/PCB_LFER_descriptors.csv", 
   # Need to add the folder where the result is going to be saved
   # It should be metdataID-year
-  file_path = "Output/Data/Results/isd_light/VefOHareAirport2018-2020.csv"
+  file_path = "Output/PUFPASModel/Vef/isd_light/VefOHareAirport_isd_light_60.csv"
 )

@@ -39,7 +39,7 @@ num_years <- 4               # Number of years to include (start_year + 1)
 years <- start_year:(start_year + num_years - 1)
 
 # Create a directory for output
-output_dir <- file.path("Output/Data/Meteo/isd_light", metdataID)
+output_dir <- file.path("Output/PUFPASModel/Meteo/isd_light", metdataID)
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }

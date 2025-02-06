@@ -97,7 +97,7 @@ filled_data <- filled_data %>%
 str(filled_data)
 
 # Create output directory
-output_dir <- file.path("Output/Data/Meteo/MERRA", "EastChicago") # Need to adjust name
+output_dir <- file.path("Output/PUFPASModel/Meteo/MERRA", "EastChicago") # Need to adjust name
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
