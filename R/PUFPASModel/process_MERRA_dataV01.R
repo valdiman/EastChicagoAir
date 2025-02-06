@@ -11,12 +11,12 @@ install.packages('zoo')
 }
 
 # Location and time selection ---------------------------------------------
-# Define coordinates for O'Hare International Airport, Chicago (Longitude, Latitude)
-lonlat <- c(-87.904722, 41.978611)
+# Define coordinates for East Chicago, IN (Longitude, Latitude)
+lonlat <- c(-87.454764, 41.639202)
 
 # Define the start and end date
-start_date <- "2018-01-01"
-end_date <- "2020-12-31"
+start_date <- "2011-11-01"
+end_date <- "2014-07-31"
 
 # Download data from MERRA-2 ----------------------------------------------
 # Fetch the data for all parameters in one call
@@ -97,13 +97,13 @@ filled_data <- filled_data %>%
 str(filled_data)
 
 # Create output directory
-output_dir <- file.path("Output/Data/MERRA", "OHareAirport") # Need to adjust name
+output_dir <- file.path("Output/Data/Meteo/MERRA", "EastChicago") # Need to adjust name
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
 
 # Save the final filled data without 'T2MDEW'
-output_file_path <- file.path(output_dir, "OHareAirport-2018-2021.csv") # Need to adjust name
+output_file_path <- file.path(output_dir, "EastChicago-2011-2014.csv") # Need to adjust name
 tryCatch({
   write.csv(filled_data, file = output_file_path, row.names = FALSE)
   cat(sprintf("Final filled data saved to %s\n", output_file_path))
