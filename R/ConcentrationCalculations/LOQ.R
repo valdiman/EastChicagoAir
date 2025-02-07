@@ -95,6 +95,7 @@ invisible(lapply(names(blank.m), function(col_name) {
 
 # Calculate LOQ -----------------------------------------------------------
 # Better option to use log10 data to calculate LOQ
+# LOQ are in log10 scale
 # Create LOQ for "a", i.e., upper 95 CI% (mean + 1.96*sd/(n)^0.5)
 log10blank.a <- log10(blank.a) # log10 blank data
 loq.a <- colMeans(log10blank.a,
@@ -157,9 +158,9 @@ ggsave("Output/Plots/LOQs.png", plot = plot.loqs, width = 10,
        height = 5, dpi = 300)
 
 # Samples vs LOQ (masses) -------------------------------------------------
-# Select samples from a, subset only PCBs, and convert to numeric
-sample.a.0 <- subset(a, In.Out %in% c("IN", "OUT"))
-sample.a <- sapply(subset(a, In.Out %in% c("IN", "OUT"))[, pcb_columns],
+# Select OUT samples from a, subset only PCBs, and convert to numeric
+sample.a.0 <- subset(a, In.Out %in% c("OUT"))
+sample.a <- sapply(subset(a, In.Out %in% c("OUT"))[, pcb_columns],
                    as.numeric)
 
 # Log10 transformation excluding zeros and replacing with NA
@@ -191,60 +192,65 @@ for (j in 1:ncol(sample.a.c)) {
 
 # Add metadata
 # Get the column indices for the range of columns in sample.a.0
-cols_to_add <- which(names(sample.a.0) == "SSPCB13C.3"):which(names(sample.a.0) == "SSPCB166")
-sample.a.c <- cbind(sample.a.0[, cols_to_add], sample.a.c)
 sample.a.c <- cbind(sample.a.0$In.Out, sample.a.0$Date.Placed,
                     sample.a.0$Date.Collected..shipment.date.for.FB.,
                     sample.a.c)
 # Rename the first three columns of sample.a.c
 colnames(sample.a.c)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+# Covert matrix to data.frame
+sample.a.c <- as.data.frame(sample.a.c)
+# Change Location name to outdoor
+sample.a.c$Location <- "outdoor"
 # Convert the column to Date format
 sample.a.c$DateDeploy <- as.Date(as.numeric(sample.a.c$DateDeploy),
                                   origin = "1899-12-30")
 sample.a.c$DateCollect <- as.Date(as.numeric(sample.a.c$DateCollect),
                                  origin = "1899-12-30")
-
-# (2) below loq -> loq/(2)^0.5
-sample.a.c.2 <- matrix(NA, nrow = nrow(log10sample.a), ncol = ncol(log10sample.a))
-colnames(sample.a.c.2) <- colnames(log10sample.a)
-for (j in 1:ncol(sample.a.c.2)) {
-  for (i in 1:nrow(sample.a.c.2)) {
-    if (!is.na(log10sample.a[i, j])) {
-      if (log10sample.a[i, j] > loq.a[j]) {
-        sample.a.c.2[i, j] <- 10^log10sample.a[i, j]
-      } else {
-        sample.a.c.2[i, j] <- 10^(loq.a[j]/sqrt(2))
-      }
-    } else {
-      sample.a.c.2[i, j] <- 10^(loq.a[j]/sqrt(2))
-    }
-  }
-}
-
-# Add metadata
-sample.a.c.2 <- cbind(sample.a.0[, cols_to_add], sample.a.c.2)
-sample.a.c.2 <- cbind(sample.a.0$In.Out, sample.a.0$Date.Placed,
-                    sample.a.0$Date.Collected..shipment.date.for.FB.,
-                    sample.a.c.2)
-# Rename the first three columns of sample.a.c
-colnames(sample.a.c.2)[1:3] <- c("Location", "DateDeploy", "DateCollect")
-# Convert the column to Date format
-sample.a.c.2$DateDeploy <- as.Date(as.numeric(sample.a.c.2$DateDeploy),
-                                 origin = "1899-12-30")
-sample.a.c.2$DateCollect <- as.Date(as.numeric(sample.a.c.2$DateCollect),
-                                  origin = "1899-12-30")
-
-# Export results
-# Loq = 0
-write.csv(sample.a.c, file = "Output/Data/csv/Sample_aV01.csv",
+# Export data
+write.csv(sample.a.c, file = "Output/Data/csv/MassSample_a.csv",
           row.names = FALSE)
-# Loq = loq/(2)^0.5
-write.csv(sample.a.c.2, file = "Output/Data/csv/Sample_aV02.csv",
-          row.names = FALSE)
+
+# # (2) below loq -> loq/(2)^0.5
+# #sample.a.c.2 <- matrix(NA, nrow = nrow(log10sample.a), ncol = ncol(log10sample.a))
+# #colnames(sample.a.c.2) <- colnames(log10sample.a)
+# for (j in 1:ncol(sample.a.c.2)) {
+#   for (i in 1:nrow(sample.a.c.2)) {
+#     if (!is.na(log10sample.a[i, j])) {
+#       if (log10sample.a[i, j] > loq.a[j]) {
+#         sample.a.c.2[i, j] <- 10^log10sample.a[i, j]
+#       } else {
+#         sample.a.c.2[i, j] <- 10^(loq.a[j]/sqrt(2))
+#       }
+#     } else {
+#       sample.a.c.2[i, j] <- 10^(loq.a[j]/sqrt(2))
+#     }
+#   }
+# }
+# 
+# # Add metadata
+# sample.a.c.2 <- cbind(sample.a.0[, cols_to_add], sample.a.c.2)
+# sample.a.c.2 <- cbind(sample.a.0$In.Out, sample.a.0$Date.Placed,
+#                     sample.a.0$Date.Collected..shipment.date.for.FB.,
+#                     sample.a.c.2)
+# # Rename the first three columns of sample.a.c
+# colnames(sample.a.c.2)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+# # Convert the column to Date format
+# sample.a.c.2$DateDeploy <- as.Date(as.numeric(sample.a.c.2$DateDeploy),
+#                                  origin = "1899-12-30")
+# sample.a.c.2$DateCollect <- as.Date(as.numeric(sample.a.c.2$DateCollect),
+#                                   origin = "1899-12-30")
+# 
+# # Export results
+# # Loq = 0
+# write.csv(sample.a.c, file = "Output/Data/csv/Sample_aV01.csv",
+#           row.names = FALSE)
+# # Loq = loq/(2)^0.5
+# write.csv(sample.a.c.2, file = "Output/Data/csv/Sample_aV02.csv",
+#           row.names = FALSE)
 
 # Select samples from "m", subset only PCBs, and convert to numeric
-sample.m.0 <- subset(m, In.Out %in% c("IN", "outdoor"))
-sample.m <- sapply(subset(m, In.Out %in% c("IN", "outdoor"))[, pcb_columns],
+sample.m.0 <- subset(m, In.Out %in% c("outdoor"))
+sample.m <- sapply(subset(m, In.Out %in% c("outdoor"))[, pcb_columns],
                    as.numeric)
 # Log10 transformation excluding zeros and replacing with NA
 log10sample.m <- as.matrix(log10(ifelse(sample.m == 0, NA, sample.m)))
@@ -275,52 +281,55 @@ for (j in 1:ncol(sample.m.c)) {
 
 # Add metadata
 # Get the column indices for the range of columns in sample.a.0
-cols_to_add <- which(names(sample.m.0) == "SSPCB13C.3"):which(names(sample.m.0) == "SSPCB166")
-sample.m.c <- cbind(sample.m.0[, cols_to_add], sample.m.c)
 sample.m.c <- cbind(sample.m.0$In.Out, sample.m.0$Date.Placed,
                     sample.m.0$Date.Collected..shipment.date.for.FB.,
                     sample.m.c)
 # Rename the first three columns of sample.a.c
 colnames(sample.m.c)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+# Covert matrix to data.frame
+sample.m.c <- as.data.frame(sample.m.c)
 # Convert the column to Date format
 sample.m.c$DateDeploy <- as.Date(as.numeric(sample.m.c$DateDeploy),
                                  origin = "1899-12-30")
 sample.m.c$DateCollect <- as.Date(as.numeric(sample.m.c$DateCollect),
                                   origin = "1899-12-30")
-
-# (2) below loq -> loq/(2)^0.5
-sample.m.c.2 <- matrix(NA, nrow = nrow(log10sample.m), ncol = ncol(log10sample.m))
-colnames(sample.m.c.2) <- colnames(log10sample.m)
-for (j in 1:ncol(sample.m.c.2)) {
-  for (i in 1:nrow(sample.m.c.2)) {
-    if (!is.na(log10sample.m[i, j])) {
-      if (log10sample.m[i, j] > loq.m[j]) {
-        sample.m.c.2[i, j] <- 10^log10sample.m[i, j]
-      } else {
-        sample.m.c.2[i, j] <- 10^(loq.m[j]/sqrt(2))
-      }
-    } else {
-      sample.m.c.2[i, j] <- 10^(loq.m[j]/sqrt(2))
-    }
-  }
-}
-
-# Add metadata
-sample.m.c.2 <- cbind(sample.m.0[, cols_to_add], sample.m.c.2)
-sample.m.c.2 <- cbind(sample.m.0$In.Out, sample.m.0$Date.Placed,
-                    sample.m.0$Date.Collected..shipment.date.for.FB.,
-                    sample.m.c.2)
-# Rename the first three columns of sample.a.c
-colnames(sample.m.c.2)[1:3] <- c("Location", "DateDeploy", "DateCollect")
-# Convert the column to Date format
-sample.m.c.2$DateDeploy <- as.Date(as.numeric(sample.m.c.2$DateDeploy),
-                                 origin = "1899-12-30")
-sample.m.c.2$DateCollect <- as.Date(as.numeric(sample.m.c.2$DateCollect),
-                                  origin = "1899-12-30")
-
-# Export results
-write.csv(sample.m.c, file = "Output/Data/csv/Sample_mV01.csv",
+# Export data
+write.csv(sample.m.c, file = "Output/Data/csv/MassSample_m.csv",
           row.names = FALSE)
-write.csv(sample.m.c.2, file = "Output/Data/csv/Sample_mV02.csv",
-          row.names = FALSE)
+
+# # (2) below loq -> loq/(2)^0.5
+# sample.m.c.2 <- matrix(NA, nrow = nrow(log10sample.m), ncol = ncol(log10sample.m))
+# colnames(sample.m.c.2) <- colnames(log10sample.m)
+# for (j in 1:ncol(sample.m.c.2)) {
+#   for (i in 1:nrow(sample.m.c.2)) {
+#     if (!is.na(log10sample.m[i, j])) {
+#       if (log10sample.m[i, j] > loq.m[j]) {
+#         sample.m.c.2[i, j] <- 10^log10sample.m[i, j]
+#       } else {
+#         sample.m.c.2[i, j] <- 10^(loq.m[j]/sqrt(2))
+#       }
+#     } else {
+#       sample.m.c.2[i, j] <- 10^(loq.m[j]/sqrt(2))
+#     }
+#   }
+# }
+# 
+# # Add metadata
+# sample.m.c.2 <- cbind(sample.m.0[, cols_to_add], sample.m.c.2)
+# sample.m.c.2 <- cbind(sample.m.0$In.Out, sample.m.0$Date.Placed,
+#                     sample.m.0$Date.Collected..shipment.date.for.FB.,
+#                     sample.m.c.2)
+# # Rename the first three columns of sample.a.c
+# colnames(sample.m.c.2)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+# # Convert the column to Date format
+# sample.m.c.2$DateDeploy <- as.Date(as.numeric(sample.m.c.2$DateDeploy),
+#                                  origin = "1899-12-30")
+# sample.m.c.2$DateCollect <- as.Date(as.numeric(sample.m.c.2$DateCollect),
+#                                   origin = "1899-12-30")
+# 
+# # Export results
+# write.csv(sample.m.c, file = "Output/Data/csv/Sample_mV01.csv",
+#           row.names = FALSE)
+# write.csv(sample.m.c.2, file = "Output/Data/csv/Sample_mV02.csv",
+#           row.names = FALSE)
 
