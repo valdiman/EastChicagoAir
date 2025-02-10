@@ -1,31 +1,36 @@
 # concentration Analysis
 # https://indianaharbor.evs.anl.gov/about-project/timeline/index.cfm
 # https://indianaharbor.evs.anl.gov/dredging/
+# https://indianaharbor.evs.anl.gov/data/ambient/
 
 # Packages and libraries needed -------------------------------------------------------------------
 # Install packages
 install.packages("readxl")
 install.packages("dplyr")
+install.packages("ggplot")
 
 # Library
 {
   library(readxl) # to read excel files
   library(dplyr)
   library(scales)
+  library(ggplot2)
+  library(tidyr)
 }
 
 # Read Excel data ---------------------------------------------------------
-conc <- data.frame(read_xlsx("Output/Data/excel/Concentration_Calculations.xlsx",
+aesop <- data.frame(read_xlsx("Output/Data/excel/Concentration_Calculations.xlsx",
                           sheet = "Concentration_ng_m3"))
+ace <- data.frame(read_xlsx("Data/ACEData.xlsx", sheet = "ace"))
 
-# Plots -------------------------------------------------------------------
+# AESOP data --------------------------------------------------------------
 # tPCB
-conc.tPCB <- rowSums(conc[, 4:176], na.rm = TRUE)
-conc.tPCB <- data.frame(Meteo = conc$Meteo, DateDploy = conc$DateDeploy,
-                        DateCollect = conc$DateCollect, conc.tPCB)
-colnames(conc.tPCB)[colnames(conc.tPCB) == "conc.tPCB"] <- "tPCB"
+aesop.tPCB <- rowSums(aesop[, 4:176], na.rm = TRUE)
+aesop.tPCB <- data.frame(Meteo = aesop$Meteo, DateDploy = aesop$DateDeploy,
+                        DateCollect = aesop$DateCollect, aesop.tPCB)
+colnames(aesop.tPCB)[colnames(aesop.tPCB) == "aesop.tPCB"] <- "tPCB"
 
-ggplot(conc.tPCB, aes(x = Meteo, y = tPCB)) +
+ggplot(aesop.tPCB, aes(x = Meteo, y = tPCB)) +
   geom_boxplot() +
   theme_classic() +
   labs( x = "Meteorology", y = "tPCB concentration (ng/m3)") + 
@@ -35,9 +40,9 @@ ggplot(conc.tPCB, aes(x = Meteo, y = tPCB)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-conc.tPCB$DateCollect <- as.Date(conc.tPCB$DateCollect)
+aesop.tPCB$DateCollect <- as.Date(aesop.tPCB$DateCollect)
 
-ggplot(subset(conc.tPCB, Meteo == "MERRA"), aes(x = DateCollect, y = tPCB)) +
+ggplot(subset(aesop.tPCB, Meteo == "MERRA"), aes(x = DateCollect, y = tPCB)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
@@ -50,16 +55,15 @@ ggplot(subset(conc.tPCB, Meteo == "MERRA"), aes(x = DateCollect, y = tPCB)) +
         axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11))
 
-lr.tPCB <- lm(log10(tPCB) ~ DateCollect, data = subset(conc.tPCB, Meteo == "MERRA"))
+lr.tPCB <- lm(log10(tPCB) ~ DateCollect, data = subset(aesop.tPCB, Meteo == "MERRA"))
 summary(lr.tPCB)
 
 # PCB8
-conc.PCB8 <- conc$PCB8
-conc.PCB8 <- data.frame(Meteo = conc$Meteo, DateDploy = conc$DateDeploy,
-                         DateCollect = conc$DateCollect, conc.PCB8)
-colnames(conc.PCB8)[colnames(conc.PCB8) == "conc.PCB8"] <- "PCB8"
+aesop.PCB8 <- data.frame(Meteo = aesop$Meteo, DateDploy = aesop$DateDeploy,
+                         DateCollect = aesop$DateCollect, aesop$PCB8)
+colnames(aesop.PCB8)[colnames(aesop.PCB8) == "aesop.PCB8"] <- "PCB8"
 
-ggplot(conc.PCB8, aes(x = Meteo, y = PCB8)) +
+ggplot(aesop.PCB8, aes(x = Meteo, y = PCB8)) +
   geom_boxplot() +
   theme_classic() +
   labs( x = "Meteorology", y = "PCB 8 concentration (ng/m3)") + 
@@ -69,7 +73,7 @@ ggplot(conc.PCB8, aes(x = Meteo, y = PCB8)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-conc.PCB8$DateCollect <- as.Date(conc.PCB8$DateCollect)
+aesop.PCB8$DateCollect <- as.Date(aesop.PCB8$DateCollect)
 
 ggplot(subset(conc.PCB8, Meteo == "MERRA"), aes(x = DateCollect, y = PCB8)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
@@ -84,13 +88,13 @@ ggplot(subset(conc.PCB8, Meteo == "MERRA"), aes(x = DateCollect, y = PCB8)) +
         axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11))
 
-lr.PCB8 <- lm(log10(PCB8) ~ DateCollect, data = subset(conc.PCB8, Meteo == "MERRA"))
+lr.PCB8 <- lm(log10(PCB8) ~ DateCollect, data = subset(aesop.PCB8, Meteo == "MERRA"))
 summary(lr.PCB8)
 
 # PCB11
-conc.PCB11 <- conc$PCB11
-conc.PCB11 <- data.frame(Meteo = conc$Meteo, DateDploy = conc$DateDeploy,
-                         DateCollect = conc$DateCollect, conc.PCB11)
+conc.PCB11 <- aesop$PCB11
+conc.PCB11 <- data.frame(Meteo = aesop$Meteo, DateDploy = aesop$DateDeploy,
+                         DateCollect = aesop$DateCollect, conc.PCB11)
 colnames(conc.PCB11)[colnames(conc.PCB11) == "conc.PCB11"] <- "PCB11"
 
 ggplot(conc.PCB11, aes(x = Meteo, y = PCB11)) +
@@ -122,8 +126,8 @@ lr.PCB11 <- lm(log10(PCB11) ~ DateCollect, data = subset(conc.PCB11, Meteo == "M
 summary(lr.PCB11)
 
 # PCB15
-conc.PCB15 <- conc$PCB15
-conc.PCB15 <- data.frame(Meteo = conc$Meteo, DateDploy = conc$DateDeploy,
+conc.PCB15 <- aesop$PCB15
+conc.PCB15 <- data.frame(Meteo = aesop$Meteo, DateDploy = aesop$DateDeploy,
                         DateCollect = conc$DateCollect, conc.PCB15)
 colnames(conc.PCB15)[colnames(conc.PCB15) == "conc.PCB15"] <- "PCB15"
 
@@ -325,5 +329,345 @@ ggplot(subset(conc.PCB61, Meteo == "MERRA"), aes(x = DateCollect, y = PCB61)) +
 lr.PCB61 <- lm(log10(PCB61) ~ DateCollect, data = subset(conc.PCB61, Meteo == "MERRA"))
 summary(lr.PCB61)
 
+# ACE Data ----------------------------------------------------------------
+# Remove blanks cells
+ace.1 <- subset(ace, !grepl("^1899-", date))
+# Change units to ng/m3 from ng/m3
+ace.1 <- ace.1 %>%
+  mutate(across(starts_with("PCB"), ~ . / 1000))
 
+#PCB 8
+ggplot(ace.1, aes(x = as.Date(date), y = PCB8, fill = location)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCB 8 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
 
+ace.1_filtered <- subset(ace.1, PCB8 > 0)
+lr.PCB8 <- lm(log10(PCB8) ~ date, data = ace.1_filtered)
+summary(lr.PCB8)
+
+# PCB 15
+ggplot(ace.1, aes(x = as.Date(date), y = PCB15)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCB 15 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
+
+ace.1_filtered <- subset(ace.1, PCB15 > 0)
+lr.PCB15 <- lm(log10(PCB15) ~ date, data = ace.1_filtered)
+summary(lr.PCB15)
+
+# PCB 18.30
+ggplot(ace.1, aes(x = as.Date(date), y = PCB18.30)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCBs 18+30 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
+
+ace.1_filtered <- subset(ace.1, PCB18.30 > 0)
+lr.PCB18 <- lm(log10(PCB18.30) ~ date, data = ace.1_filtered)
+summary(lr.PCB18)
+
+# PCB 20.28
+ggplot(ace.1, aes(x = as.Date(date), y = PCB20.28)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCBs 20+28 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
+
+ace.1_filtered <- subset(ace.1, PCB20.28 > 0)
+lr.PCB20 <- lm(log10(PCB20.28) ~ date, data = ace.1_filtered)
+summary(lr.PCB20)
+
+# PCB 31
+ggplot(ace.1, aes(x = as.Date(date), y = PCB31)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCB 31 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
+
+ace.1_filtered <- subset(ace.1, PCB31 > 0)
+lr.PCB31 <- lm(log10(PCB31) ~ date, data = ace.1_filtered)
+summary(lr.PCB31)
+
+# Both data set -----------------------------------------------------------
+# PCB 8
+conc.PCB8$Source <- "MERRA"
+ace.1$Source <- "ACE"
+# Standardize date columns
+conc.PCB8$Date <- conc.PCB8$DateCollect
+ace.1$Date <- as.Date(ace.1$date)
+# Select relevant columns
+conc.PCB8_subset <- conc.PCB8[, c("Date", "PCB8", "Source")]
+ace.1_subset <- ace.1[, c("Date", "PCB8", "Source")]
+# Combine the datasets
+combined_data <- rbind(conc.PCB8_subset, ace.1_subset)
+
+ggplot(combined_data, aes(x = as.Date(Date), y = PCB8, color = Source, fill = Source)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3, alpha = 0.7) +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x = "", y = "PCB 8 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11)) +
+  scale_color_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen")) +  # Custom colors
+  scale_fill_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen"))  # Matching fill colors
+
+# PCB 15
+conc.PCB15$Source <- "MERRA"
+ace.1$Source <- "ACE"
+# Standardize date columns
+conc.PCB15$Date <- conc.PCB15$DateCollect
+ace.1$Date <- as.Date(ace.1$date)
+# Select relevant columns
+conc.PCB15_subset <- conc.PCB15[, c("Date", "PCB15", "Source")]
+ace.1_subset <- ace.1[, c("Date", "PCB15", "Source")]
+# Combine the datasets
+combined_data <- rbind(conc.PCB15_subset, ace.1_subset)
+
+ggplot(combined_data, aes(x = as.Date(Date), y = PCB15, color = Source, fill = Source)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3, alpha = 0.7) +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x = "", y = "PCB 15 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11)) +
+  scale_color_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen")) +  # Custom colors
+  scale_fill_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen"))  # Matching fill colors
+
+# PCB 18.30
+conc.PCB18$Source <- "MERRA"
+ace.1$Source <- "ACE"
+# Standardize date columns
+conc.PCB18$Date <- conc.PCB18$DateCollect
+ace.1$Date <- as.Date(ace.1$date)
+# Select relevant columns
+conc.PCB18_subset <- conc.PCB18[, c("Date", "PCB18", "Source")]
+ace.1_subset <- ace.1[, c("Date", "PCB18.30", "Source")]
+colnames(ace.1_subset)[colnames(ace.1_subset) == "PCB18.30"] <- "PCB18"
+# Combine the datasets
+combined_data <- rbind(conc.PCB18_subset, ace.1_subset)
+
+ggplot(combined_data, aes(x = as.Date(Date), y = PCB18, color = Source, fill = Source)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3, alpha = 0.7) +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x = "", y = "PCB 18 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11)) +
+  scale_color_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen")) +  # Custom colors
+  scale_fill_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen"))  # Matching fill colors
+
+# PCB 20.28
+conc.PCB28$Source <- "MERRA"
+ace.1$Source <- "ACE"
+# Standardize date columns
+conc.PCB28$Date <- conc.PCB28$DateCollect
+ace.1$Date <- as.Date(ace.1$date)
+# Select relevant columns
+conc.PCB28_subset <- conc.PCB28[, c("Date", "PCB28", "Source")]
+ace.1_subset <- ace.1[, c("Date", "PCB20.28", "Source")]
+colnames(ace.1_subset)[colnames(ace.1_subset) == "PCB20.28"] <- "PCB28"
+# Combine the datasets
+combined_data <- rbind(conc.PCB28_subset, ace.1_subset)
+
+ggplot(combined_data, aes(x = as.Date(Date), y = PCB28, color = Source, fill = Source)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3, alpha = 0.7) +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x = "", y = "PCBs 20+28 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11)) +
+  scale_color_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen")) +  # Custom colors
+  scale_fill_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen"))  # Matching fill colors
+
+# PCB 31
+conc.PCB31$Source <- "MERRA"
+ace.1$Source <- "ACE"
+# Standardize date columns
+conc.PCB31$Date <- conc.PCB31$DateCollect
+ace.1$Date <- as.Date(ace.1$date)
+# Select relevant columns
+conc.PCB31_subset <- conc.PCB31[, c("Date", "PCB31", "Source")]
+ace.1_subset <- ace.1[, c("Date", "PCB31", "Source")]
+# Combine the datasets
+combined_data <- rbind(conc.PCB31_subset, ace.1_subset)
+
+ggplot(combined_data, aes(x = as.Date(Date), y = PCB31, color = Source, fill = Source)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3, alpha = 0.7) +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x = "", y = "PCB 31 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11)) +
+  scale_color_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen")) +  # Custom colors
+  scale_fill_manual(values = c("MERRA" = "blue", "ACE" = "darkgreen"))  # Matching fill colors
+
+# East-CDF ----------------------------------------------------------------
+ACE.2 <- data.frame(read_xlsx("Data/ACEData.xlsx", sheet = "EAST-CDF"))
+# Remove blanks cells
+ace.2 <- subset(ACE.2, !grepl("^1899-", date))
+# Change units to ng/m3 from ng/m3
+ace.2 <- ace.2 %>%
+  mutate(across(starts_with("PCB"), ~ . / 1000))
+
+#PCB 8
+ggplot(ace.2, aes(x = as.Date(date), y = PCB8)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCB 8 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
+
+ace.1_filtered <- subset(ace.2, PCB8 > 0)
+lr.PCB8 <- lm(log10(PCB8) ~ date, data = ace.1_filtered)
+summary(lr.PCB8)
+
+# PCB 15
+ggplot(ace.2, aes(x = as.Date(date), y = PCB15)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCB 15 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
+
+ace.1_filtered <- subset(ace.2, PCB15 > 0)
+lr.PCB15 <- lm(log10(PCB15) ~ date, data = ace.1_filtered)
+summary(lr.PCB15)
+
+# PCB 18.30
+ggplot(ace.2, aes(x = as.Date(date), y = PCB18.30)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCBs 18+30 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
+
+ace.1_filtered <- subset(ace.2, PCB18.30 > 0)
+lr.PCB18 <- lm(log10(PCB18.30) ~ date, data = ace.1_filtered)
+summary(lr.PCB18)
+
+# PCB 20.28
+ggplot(ace.2, aes(x = as.Date(date), y = PCB20.28)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCBs 20+28 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
+
+ace.1_filtered <- subset(ace.2, PCB20.28 > 0)
+lr.PCB20 <- lm(log10(PCB20.28) ~ date, data = ace.1_filtered)
+summary(lr.PCB20)
+
+# PCB 31
+ggplot(ace.2, aes(x = as.Date(date), y = PCB31)) +
+  geom_point(shape = 21, size = 2.5, stroke = 1.3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
+  theme_bw() +
+  theme(aspect.ratio = 1/2) +
+  labs(x  = "", y = "PCB 31 concentration (ng/m3)") + 
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
+             linetype = "dashed", linewidth = 1) + # start of dredging
+  theme(axis.text.x = element_text(face = "bold", size = 7, color = "black",
+                                   angle = 60, hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11))
+
+ace.1_filtered <- subset(ace.2, PCB31 > 0)
+lr.PCB31 <- lm(log10(PCB31) ~ date, data = ace.1_filtered)
+summary(lr.PCB31)
