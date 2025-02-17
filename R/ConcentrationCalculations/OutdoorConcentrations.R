@@ -182,10 +182,19 @@ ggplot(aesop.tPCB, aes(x = Meteo, y = tPCB)) +
   theme(axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11))
 
-# Convert DateCollect to Date format
-aesop.tPCB$DateCollect <- as.Date(aesop.tPCB$DateCollect)
+# Use only MERRA and Ampleman
+aesop_V2 <- aesop %>% filter(Meteo %in% c("MERRA", "Ampleman"))
 
-ggplot(subset(aesop.tPCB, Meteo == "MERRA"), aes(x = DateCollect, y = tPCB)) +
+# tPCB
+aesop_V2.tPCB <- rowSums(aesop_V2[, 4:176], na.rm = TRUE)
+aesop_V2.tPCB <- data.frame(DateDploy = aesop_V2$DateDeploy,
+                            DateCollect = aesop_V2$DateCollect,
+                            tPCB = aesop_V2.tPCB)
+
+# Convert DateCollect to Date format
+aesop_V2.tPCB$DateCollect <- as.Date(aesop_V2.tPCB$DateCollect)
+
+ggplot(subset(aesop_V2.tPCB), aes(x = DateCollect, y = tPCB)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
@@ -193,14 +202,16 @@ ggplot(subset(aesop.tPCB, Meteo == "MERRA"), aes(x = DateCollect, y = tPCB)) +
   labs(y = "tPCB concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
-             linetype = "dashed", size = 1) + # start of dredging
+             linetype = "dashed", linewidth = 1) + # start of dredging
   theme(axis.text.x = element_text(face = "bold", size = 9, color = "black"),
         axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11))
 
-lr.tPCB <- lm(tPCB ~ DateCollect, data = subset(aesop.tPCB, Meteo == "MERRA"))
+lr.tPCB <- lm(tPCB ~ DateCollect, data = subset(aesop_V2.tPCB))
 summary(lr.tPCB)
 
+
+# Need to change to aesop_V2
 # PCB8
 aesop.PCB8 <- data.frame(Meteo = aesop$Meteo, DateDploy = aesop$DateDeploy,
                          DateCollect = aesop$DateCollect, PCB8 = aesop$PCB8)
@@ -459,16 +470,18 @@ summary(lr.PCB61)
 
 # Both data set -----------------------------------------------------------
 # PCB 8
-aesop.PCB8.merra <- aesop.PCB8 %>% 
-  filter(Meteo == "MERRA")
-aesop.PCB8.merra$location <- "aesop"
+# aesop
+aesop.PCB8 <- aesop_V2 %>%
+  select("DateCollect", "PCB8")
+aesop.PCB8$location <- "aesop"
+aesop.PCB8 <- aesop.PCB8 %>%
+  select("location", "DateCollect", "PCB8")
+# ace
 ace.PCB8 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
                        PCB8 = ace.1$PCB8)
-# Select relevant columns
-aesop.PCB8_subset <- aesop.PCB8.merra[, c("location", "DateCollect", "PCB8")]
 ace.PCB8_subset <- ace.PCB8[, c("location", "DateCollect", "PCB8")]
 # Combine the datasets
-combined_data <- rbind(aesop.PCB8_subset, ace.PCB8_subset)
+combined_data <- rbind(aesop.PCB8, ace.PCB8_subset)
 
 plot.pcb8 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB8,
                                        color = location)) +
@@ -490,7 +503,7 @@ plot.pcb8 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB8,
 plot.pcb8
 
 # Save plot in folder
-ggsave("Output/Plots/Concentrations/PCB8.png", plot = plot.pcb8, width = 12,
+ggsave("Output/Plots/Concentrations/PCB8V02.png", plot = plot.pcb8, width = 12,
        height = 4, dpi = 500)  
 
 # PCB 15
