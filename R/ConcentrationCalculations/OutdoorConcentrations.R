@@ -507,13 +507,15 @@ ggsave("Output/Plots/Concentrations/PCB8V02.png", plot = plot.pcb8, width = 12,
        height = 4, dpi = 500)  
 
 # PCB 15
-aesop.PCB15.merra <- aesop.PCB15 %>% 
-  filter(Meteo == "MERRA")
-aesop.PCB15.merra$location <- "aesop"
+# aesop
+aesop.PCB15 <- aesop_V2 %>%
+  select("DateCollect", "PCB15")
+aesop.PCB15$location <- "aesop"
+aesop.PCB15 <- aesop.PCB15 %>%
+  select("location", "DateCollect", "PCB15")
+# ace
 ace.PCB15 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
                        PCB15 = ace.1$PCB15)
-# Select relevant columns
-aesop.PCB15_subset <- aesop.PCB15.merra[, c("location", "DateCollect", "PCB15")]
 ace.PCB15_subset <- ace.PCB15[, c("location", "DateCollect", "PCB15")]
 # Combine the datasets
 combined_data <- rbind(aesop.PCB15_subset, ace.PCB15_subset)
