@@ -1,24 +1,20 @@
 # Packages and libraries needed -------------------------------------------------------------------
 # Install packages
-install.packages("readxl")
 install.packages("dplyr")
 install.packages("ggplot2")
 
 # Library
 {
-  library(readxl) # to read excel files
   library(dplyr)
   library(ggplot2)
 }
 
-# Read Excel data ---------------------------------------------------------
-a <- data.frame(read_xlsx("Data/RawDataRachel.xlsx", sheet = "group1Andy",
-                          col_names = TRUE, col_types = NULL))
-m <- data.frame(read_xlsx("Data/RawDataRachel.xlsx", sheet = "group2Maeve",
-                          col_names = TRUE, col_types = NULL))
+# Read data ---------------------------------------------------------------
+a <- read.csv("Data/Group1A.csv", check.names = FALSE)
+m <- read.csv("Data/Group2M.csv", check.names = FALSE)
 
 # Select blank data -------------------------------------------------------
-blank.a <- subset(a, In.Out %in% c("method blank", "BLANK", "Blank, last cell"))
+blank.a <- subset(a, In.Out %in% c("methodblank", "BLANK", "Blank, last cell"))
 blank.m <- subset(m, In.Out == "BLANK")
 
 # Select columns that start with "PCB"
@@ -192,7 +188,7 @@ for (j in 1:ncol(sample.a.c)) {
 
 # Add metadata
 # Get the column indices for the range of columns in sample.a.0
-sample.a.c <- cbind(sample.a.0$In.Out, sample.a.0$Date.Placed,
+sample.a.c <- cbind(sample.a.0$In.Out, as.Date(sample.a.0$Date.Placed, origin = "1899-12-30"),
                     sample.a.0$Date.Collected..shipment.date.for.FB.,
                     sample.a.c)
 # Rename the first three columns of sample.a.c
