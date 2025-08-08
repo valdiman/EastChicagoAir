@@ -579,16 +579,16 @@ aesop.PCB18 <- aesop.PCB18 %>%
 aesop.PCB18$DateCollect <- as.Date(aesop.PCB18$DateCollect,
                                    origin = "1899-12-30")
 ace.PCB18 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
-                        PCB15 = ace.1$PCB18.30)
-ace.PCB18_subset <- ace.PCB15[, c("location", "DateCollect", "PCB18")]
+                        PCB18 = ace.1$PCB18.30)
+ace.PCB18_subset <- ace.PCB18[, c("location", "DateCollect", "PCB18")]
 # Combine the datasets
-combined_data <- rbind(aesop.PCB15, ace.PCB15_subset)
+combined_data <- rbind(aesop.PCB18, ace.PCB18_subset)
 
 ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB18, color = location)) +
-  geom_point(shape = 21, size = 2.5, stroke = 1.3, alpha = 0.7) +
+  geom_point(shape = 21, size = 1.5, stroke = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "green", linetype = "solid") +
   theme_bw() +
-  theme(aspect.ratio = 1/2) +
-  labs(x = "", y = "PCBs 18 + 30 concentration (ng/m3)") + 
+  labs(x = "", y = "PCBs 18+30 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
              linetype = "dashed", linewidth = 1) + # start of dredging
@@ -598,6 +598,14 @@ ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB18, color = location)
         axis.title.y = element_text(face = "bold", size = 11)) +
   scale_color_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue",
                                 "HS" = "#E69F00", "aesop" = "red"))
+
+lr.PCB18 <- lm(
+  log10(PCB18) ~ DateCollect,
+  data = combined_data,
+  subset = PCB18 > 0 & !is.na(PCB18) & !is.na(DateCollect)
+)
+
+summary(lr.PCB18)
 
 # PCB 20+28
 aesop.PCB28.merra <- aesop.PCB28 %>% 
