@@ -5,13 +5,11 @@
 
 # Packages and libraries needed -------------------------------------------------------------------
 # Install packages
-install.packages("readxl")
 install.packages("dplyr")
 install.packages("ggplot")
 
 # Library
 {
-  library(readxl) # to read excel files
   library(dplyr)
   library(scales)
   library(ggplot2)
@@ -19,14 +17,13 @@ install.packages("ggplot")
 }
 
 # Read Excel data ---------------------------------------------------------
-ace <- data.frame(read_xlsx("Data/ACEData.xlsx", sheet = "ace"))
-aesop <- data.frame(read_xlsx("Output/Data/excel/Concentration_Calculations.xlsx",
-                          sheet = "Concentration_ng_m3"))
+ace <- read.csv("Data/ACEData.csv")
+aesop <- read.csv("Output/Data/csv/ConcentrationPUF.csv")
 
 # ACE Data ----------------------------------------------------------------
 # Remove blanks cells
 ace.1 <- subset(ace, !grepl("0", location))
-# Change units to ng/m3 from ng/m3
+# Change units to pg/m3 from ng/m3
 ace.1 <- ace.1 %>%
   mutate(across(starts_with("PCB") & !ends_with("_unc"), ~ . / 1000))
 ace.1 <- ace.1 %>%
@@ -192,13 +189,15 @@ aesop_V2.tPCB <- data.frame(DateDploy = aesop_V2$DateDeploy,
                             tPCB = aesop_V2.tPCB)
 
 # Convert DateCollect to Date format
-aesop_V2.tPCB$DateCollect <- as.Date(aesop_V2.tPCB$DateCollect)
+aesop_V2.tPCB$DateCollect <- as.Date(aesop_V2.tPCB$DateCollect,
+                                     origin = "1899-12-30")
 
 ggplot(subset(aesop_V2.tPCB), aes(x = DateCollect, y = tPCB)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 1/2) +
+  labs(x = "Collection date") +
   labs(y = "tPCB concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -209,7 +208,6 @@ ggplot(subset(aesop_V2.tPCB), aes(x = DateCollect, y = tPCB)) +
 
 lr.tPCB <- lm(tPCB ~ DateCollect, data = subset(aesop_V2.tPCB))
 summary(lr.tPCB)
-
 
 # Need to change to aesop_V2
 # PCB8
@@ -226,13 +224,16 @@ ggplot(aesop.PCB8, aes(x = Meteo, y = PCB8)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-aesop.PCB8$DateCollect <- as.Date(aesop.PCB8$DateCollect)
+# Convert DateCollect to Date format
+aesop.PCB8$DateCollect <- as.Date(aesop.PCB8$DateCollect,
+                                  origin = "1899-12-30")
 
 ggplot(subset(aesop.PCB8, Meteo == "MERRA"), aes(x = DateCollect, y = PCB8)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 1/2) +
+  labs(x = "Collection date") +
   labs(y = "PCB 8 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -258,13 +259,15 @@ ggplot(aesop.PCB11, aes(x = Meteo, y = PCB11)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-aesop.PCB11$DateCollect <- as.Date(aesop.PCB11$DateCollect)
+aesop.PCB11$DateCollect <- as.Date(aesop.PCB11$DateCollect,
+                                  origin = "1899-12-30")
 
 ggplot(subset(aesop.PCB11, Meteo == "MERRA"), aes(x = DateCollect, y = PCB11)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 1/2) +
+  labs(x = "Collection date") +
   labs(y = "PCB 11 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -290,13 +293,15 @@ ggplot(aesop.PCB15, aes(x = Meteo, y = PCB15)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-aesop.PCB15$DateCollect <- as.Date(aesop.PCB15$DateCollect)
+aesop.PCB15$DateCollect <- as.Date(aesop.PCB15$DateCollect,
+                                  origin = "1899-12-30")
 
 ggplot(subset(aesop.PCB15, Meteo == "MERRA"), aes(x = DateCollect, y = PCB15)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 1/2) +
+  labs(x = "Collection date") +
   labs(y = "PCB 15 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -322,13 +327,15 @@ ggplot(aesop.PCB18, aes(x = Meteo, y = PCB18)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-aesop.PCB18$DateCollect <- as.Date(aesop.PCB18$DateCollect)
+aesop.PCB18$DateCollect <- as.Date(aesop.PCB18$DateCollect,
+                                  origin = "1899-12-30")
 
 ggplot(subset(aesop.PCB18, Meteo == "MERRA"), aes(x = DateCollect, y = PCB18)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 1/2) +
+  labs(x = "Collection date") +
   labs(y = "PCBs 18+30 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -354,13 +361,15 @@ ggplot(aesop.PCB28, aes(x = Meteo, y = PCB28)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-aesop.PCB28$DateCollect <- as.Date(aesop.PCB28$DateCollect)
+aesop.PCB28$DateCollect <- as.Date(aesop.PCB28$DateCollect,
+                                   origin = "1899-12-30")
 
 ggplot(subset(aesop.PCB28, Meteo == "MERRA"), aes(x = DateCollect, y = PCB28)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 1/2) +
+  labs(x = "Collection date") +
   labs(y = "PCBs 20+28 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -369,7 +378,7 @@ ggplot(subset(aesop.PCB28, Meteo == "MERRA"), aes(x = DateCollect, y = PCB28)) +
         axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11))
 
-lr.PCB28 <- lm(log10(PCB28) ~ DateCollect, data = subset(conc.PCB28, Meteo == "MERRA"))
+lr.PCB28 <- lm(log10(PCB28) ~ DateCollect, data = subset(aesop.PCB28, Meteo == "MERRA"))
 summary(lr.PCB28)
 
 # PCB31
@@ -386,13 +395,15 @@ ggplot(aesop.PCB31, aes(x = Meteo, y = PCB31)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-aesop.PCB31$DateCollect <- as.Date(aesop.PCB31$DateCollect)
+aesop.PCB31$DateCollect <- as.Date(aesop.PCB31$DateCollect,
+                                   origin = "1899-12-30")
 
 ggplot(subset(aesop.PCB31, Meteo == "MERRA"), aes(x = DateCollect, y = PCB31)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 1/2) +
+  labs(x = "Collection date") +
   labs(y = "PCB 31 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -418,13 +429,15 @@ ggplot(aesop.PCB52, aes(x = Meteo, y = PCB52)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-aesop.PCB52$DateCollect <- as.Date(aesop.PCB52$DateCollect)
+aesop.PCB52$DateCollect <- as.Date(aesop.PCB52$DateCollect,
+                                   origin = "1899-12-30")
 
 ggplot(subset(aesop.PCB52, Meteo == "MERRA"), aes(x = DateCollect, y = PCB52)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 1/2) +
+  labs(x = "Collection date") +
   labs(y = "PCB 52 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -450,13 +463,15 @@ ggplot(aesop.PCB61, aes(x = Meteo, y = PCB61)) +
         axis.title.y = element_text(face = "bold", size = 11))
 
 # Convert DateCollect to Date format
-aesop.PCB61$DateCollect <- as.Date(aesop.PCB61$DateCollect)
+aesop.PCB61$DateCollect <- as.Date(aesop.PCB61$DateCollect,
+                                   origin = "1899-12-30")
 
 ggplot(subset(aesop.PCB61, Meteo == "MERRA"), aes(x = DateCollect, y = PCB61)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3) +
   geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 1/2) +
+  labs(x = "Collection date") +
   labs(y = "PCBs 61+70+74+76 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -476,6 +491,9 @@ aesop.PCB8 <- aesop_V2 %>%
 aesop.PCB8$location <- "aesop"
 aesop.PCB8 <- aesop.PCB8 %>%
   select("location", "DateCollect", "PCB8")
+# Convert to date
+aesop.PCB8$DateCollect <- as.Date(aesop.PCB8$DateCollect,
+                                     origin = "1899-12-30")
 # ace
 ace.PCB8 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
                        PCB8 = ace.1$PCB8)
@@ -483,9 +501,10 @@ ace.PCB8_subset <- ace.PCB8[, c("location", "DateCollect", "PCB8")]
 # Combine the datasets
 combined_data <- rbind(aesop.PCB8, ace.PCB8_subset)
 
-plot.pcb8 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB8,
+plot.pcb8 <- ggplot(combined_data, aes(x = DateCollect, y = PCB8,
                                        color = location)) +
   geom_point(shape = 21, size = 1.5, stroke = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "green", linetype = "solid") +
   theme_bw() +
   theme(aspect.ratio = 4/12) +
   labs(x = "", y = "PCB 8 concentration (ng/m3)") + 
@@ -502,6 +521,9 @@ plot.pcb8 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB8,
 # See plot
 plot.pcb8
 
+lr.PCB8 <- lm(log10(PCB8) ~ DateCollect, data = combined_data)
+summary(lr.PCB8)
+
 # Save plot in folder
 ggsave("Output/Plots/Concentrations/PCB8V02.png", plot = plot.pcb8, width = 12,
        height = 4, dpi = 500)  
@@ -513,17 +535,21 @@ aesop.PCB15 <- aesop_V2 %>%
 aesop.PCB15$location <- "aesop"
 aesop.PCB15 <- aesop.PCB15 %>%
   select("location", "DateCollect", "PCB15")
+# Convert to date
+aesop.PCB15$DateCollect <- as.Date(aesop.PCB15$DateCollect,
+                                  origin = "1899-12-30")
 # ace
 ace.PCB15 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
                        PCB15 = ace.1$PCB15)
 ace.PCB15_subset <- ace.PCB15[, c("location", "DateCollect", "PCB15")]
 # Combine the datasets
-combined_data <- rbind(aesop.PCB15_subset, ace.PCB15_subset)
+combined_data <- rbind(aesop.PCB15, ace.PCB15_subset)
 
 ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB15, color = location)) +
-  geom_point(shape = 21, size = 2.5, stroke = 1.3, alpha = 0.7) +
+  geom_point(shape = 21, size = 1.5, stroke = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "green", linetype = "solid") +
   theme_bw() +
-  theme(aspect.ratio = 1/2) +
+  theme(aspect.ratio = 4/12) +
   labs(x = "", y = "PCB 15 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -535,17 +561,28 @@ ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB15, color = location)
   scale_color_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue",
                                 "HS" = "#E69F00", "aesop" = "red"))
 
+lr.PCB15 <- lm(
+  log10(PCB15) ~ DateCollect,
+  data = combined_data,
+  subset = PCB15 > 0 & !is.na(PCB15) & !is.na(DateCollect)
+)
+
+summary(lr.PCB15)
+
 # PCB 18+30
 aesop.PCB18.merra <- aesop.PCB18 %>% 
   filter(Meteo == "MERRA")
-aesop.PCB18.merra$location <- "aesop"
+aesop.PCB18$location <- "aesop"
+aesop.PCB18 <- aesop.PCB18 %>%
+  select("location", "DateCollect", "PCB18")
+# Convert to date
+aesop.PCB18$DateCollect <- as.Date(aesop.PCB18$DateCollect,
+                                   origin = "1899-12-30")
 ace.PCB18 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
-                       PCB18 = ace.1$PCB18.30)
-# Select relevant columns
-aesop.PCB18_subset <- aesop.PCB18.merra[, c("location", "DateCollect", "PCB18")]
-ace.PCB18_subset <- ace.PCB18[, c("location", "DateCollect", "PCB18")]
+                        PCB15 = ace.1$PCB18.30)
+ace.PCB18_subset <- ace.PCB15[, c("location", "DateCollect", "PCB18")]
 # Combine the datasets
-combined_data <- rbind(aesop.PCB18_subset, ace.PCB18_subset)
+combined_data <- rbind(aesop.PCB15, ace.PCB15_subset)
 
 ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB18, color = location)) +
   geom_point(shape = 21, size = 2.5, stroke = 1.3, alpha = 0.7) +
