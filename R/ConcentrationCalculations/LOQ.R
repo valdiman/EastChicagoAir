@@ -30,7 +30,7 @@ shapiro_results <- lapply(blank.a, shapiro.test)
 p_values <- sapply(shapiro_results, function(x) x$p.value)
 names(p_values) <- names(blank.a)
 # Select p-values greater than 0.05
-p_values_normal <- p_values[p_values > 0.05] # 75% show normality via this test
+p_values_normal_a <- p_values[p_values > 0.05] # 75% show normality via this test
 
 # Function to create Q-Q plots for each PCB column
 plot_qq <- function(column_data, column_name) {
@@ -49,7 +49,7 @@ shapiro_results_log10 <- lapply(log10(blank.a), shapiro.test)
 p_values_log10 <- sapply(shapiro_results_log10, function(x) x$p.value)
 names(p_values_log10) <- names(blank.a)
 # Select p-values greater than 0.05
-p_values_normal_log10 <- p_values_log10[p_values_log10 > 0.05] # 94% show normality via this test
+p_values_normal_a_log10 <- p_values_log10[p_values_log10 > 0.05] # 94% show normality via this test
 
 #Plot
 # Apply the function to each column
@@ -67,7 +67,7 @@ shapiro_results <- lapply(blank.m, shapiro.test)
 p_values <- sapply(shapiro_results, function(x) x$p.value)
 names(p_values) <- names(blank.m)
 # Select p-values greater than 0.05
-p_values_normal <- p_values[p_values > 0.05] # 42% show normality via this test
+p_values_normal_m <- p_values[p_values > 0.05] # 42% show normality via this test
 
 # Plot
 # Apply the function to each PCB column with its name
@@ -81,7 +81,7 @@ shapiro_results_log10 <- lapply(log10(blank.m), shapiro.test)
 p_values_log10 <- sapply(shapiro_results_log10, function(x) x$p.value)
 names(p_values_log10) <- names(blank.m)
 # Select p-values greater than 0.05
-p_values_normal_log10 <- p_values_log10[p_values_log10 > 0.05] # 96% show normality via this test
+p_values_normal_m_log10 <- p_values_log10[p_values_log10 > 0.05] # 96% show normality via this test
 
 # Plot
 # Apply the function to each column
@@ -124,7 +124,6 @@ loq.a_df <- data.frame(PCB = pcb_columns, LOQ = loq.a, Type = "loq.a")
 loq.m_df <- data.frame(PCB = pcb_columns, LOQ = loq.m, Type = "loq.m")
 # Combine the data frames
 plot_loq_combined <- rbind(loq.a_df, loq.m_df)
-plot_loq_combined$PCB <- gsub('\\.', '+', plot_loq_combined$PCB) # replace dot for +
 plot_loq_combined$PCB <- factor(plot_loq_combined$PCB,
                                 levels = unique(plot_loq_combined$PCB))
 
@@ -187,21 +186,21 @@ for (j in 1:ncol(sample.a.c)) {
 }
 
 # Add metadata
+# Convert dates
+DatePlaced <- as.numeric(sample.a.0$DatePlaced)
+DatePlaced <- as.Date(DatePlaced, origin = "1899-12-30")
+DateCollected <- as.numeric(sample.a.0$DateCollected)
+DateCollected <- as.Date(DateCollected, origin = "1899-12-30")
 # Get the column indices for the range of columns in sample.a.0
-sample.a.c <- cbind(sample.a.0$In.Out, as.Date(sample.a.0$Date.Placed, origin = "1899-12-30"),
-                    sample.a.0$Date.Collected..shipment.date.for.FB.,
-                    sample.a.c)
-# Rename the first three columns of sample.a.c
-colnames(sample.a.c)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+sample.a.c <- data.frame(In.Out = sample.a.0$In.Out,
+                         DatePlaced = DatePlaced,
+                         DateCollected = DateCollected,
+                         sample.a.c)
 # Covert matrix to data.frame
 sample.a.c <- as.data.frame(sample.a.c)
-# Change Location name to outdoor
+colnames(sample.a.c)[colnames(sample.a.c) == "In.Out"] <- "Location"
 sample.a.c$Location <- "outdoor"
-# Convert the column to Date format
-sample.a.c$DateDeploy <- as.Date(as.numeric(sample.a.c$DateDeploy),
-                                  origin = "1899-12-30")
-sample.a.c$DateCollect <- as.Date(as.numeric(sample.a.c$DateCollect),
-                                 origin = "1899-12-30")
+
 # Export data
 write.csv(sample.a.c, file = "Output/Data/csv/MassSample_a.csv",
           row.names = FALSE)
@@ -276,19 +275,21 @@ for (j in 1:ncol(sample.m.c)) {
 }
 
 # Add metadata
+# Convert dates
+DatePlaced <- as.numeric(sample.m.0$DatePlaced)
+DatePlaced <- as.Date(DatePlaced, origin = "1899-12-30")
+DateCollected <- as.numeric(sample.m.0$DateCollected)
+DateCollected <- as.Date(DateCollected, origin = "1899-12-30")
 # Get the column indices for the range of columns in sample.a.0
-sample.m.c <- cbind(sample.m.0$In.Out, sample.m.0$Date.Placed,
-                    sample.m.0$Date.Collected..shipment.date.for.FB.,
-                    sample.m.c)
-# Rename the first three columns of sample.a.c
-colnames(sample.m.c)[1:3] <- c("Location", "DateDeploy", "DateCollect")
+sample.m.c <- data.frame(In.Out = sample.m.0$In.Out,
+                         DatePlaced = DatePlaced,
+                         DateCollected = DateCollected,
+                         sample.m.c)
 # Covert matrix to data.frame
 sample.m.c <- as.data.frame(sample.m.c)
-# Convert the column to Date format
-sample.m.c$DateDeploy <- as.Date(as.numeric(sample.m.c$DateDeploy),
-                                 origin = "1899-12-30")
-sample.m.c$DateCollect <- as.Date(as.numeric(sample.m.c$DateCollect),
-                                  origin = "1899-12-30")
+colnames(sample.m.c)[colnames(sample.m.c) == "In.Out"] <- "Location"
+sample.m.c$Location <- "outdoor"
+
 # Export data
 write.csv(sample.m.c, file = "Output/Data/csv/MassSample_m.csv",
           row.names = FALSE)
