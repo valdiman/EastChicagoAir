@@ -526,7 +526,7 @@ summary(lr.PCB8)
 
 # Save plot in folder
 ggsave("Output/Plots/Concentrations/PCB8V02.png", plot = plot.pcb8, width = 12,
-       height = 4, dpi = 500)  
+       height = 4, dpi = 500)
 
 # PCB 15
 # aesop
