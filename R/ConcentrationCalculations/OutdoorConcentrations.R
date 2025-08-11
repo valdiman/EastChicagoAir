@@ -1,4 +1,5 @@
-# concentration Analysis
+# Concentration Analysis
+# Both ACE and AESOP PAS-PUF data
 # https://indianaharbor.evs.anl.gov/about-project/timeline/index.cfm
 # https://indianaharbor.evs.anl.gov/dredging/
 # https://indianaharbor.evs.anl.gov/data/ambient/
@@ -42,27 +43,31 @@ ace.1 <- ace.1 %>%
 # AESOP data --------------------------------------------------------------
 # Use only MERRA and Ampleman
 aesop_V2 <- aesop %>% filter(Meteo %in% c("MERRA", "Ampleman"))
+aesop_V2$DateDeploy <- as.Date(aesop_V2$DateDeploy,
+                             origin = "1899-12-30")
+aesop_V2$DateCollect <- as.Date(aesop_V2$DateCollect,
+                                origin = "1899-12-30")
 
 # Both data set -----------------------------------------------------------
 # PCB 8
 # aesop
 aesop.PCB8 <- aesop_V2 %>%
   select("DateCollect", "PCB8")
-aesop.PCB8$location <- "aesop"
+aesop.PCB8$source <- "aesop"
 aesop.PCB8 <- aesop.PCB8 %>%
-  select("location", "DateCollect", "PCB8")
-# Convert to date
-aesop.PCB8$DateCollect <- as.Date(aesop.PCB8$DateCollect,
-                                     origin = "1899-12-30")
+  select("source", "DateCollect", "PCB8")
+
 # ace
 ace.PCB8 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
                        PCB8 = ace.1$PCB8)
 ace.PCB8_subset <- ace.PCB8[, c("location", "DateCollect", "PCB8")]
+names(ace.PCB8)[names(ace.PCB8) == "location"] <- "source"
+
 # Combine the datasets
-combined_data <- rbind(aesop.PCB8, ace.PCB8_subset)
+combined_data <- rbind(aesop.PCB8, ace.PCB8)
 
 plot.pcb8 <- ggplot(combined_data, aes(x = DateCollect, y = PCB8,
-                                       color = location)) +
+                                       color = source)) +
   geom_point(shape = 21, size = 1.5, stroke = 0.5) +
   theme_bw() +
   theme(aspect.ratio = 4/12) +
@@ -75,13 +80,17 @@ plot.pcb8 <- ggplot(combined_data, aes(x = DateCollect, y = PCB8,
         axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11)) +
   scale_color_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue",
-                                "HS" = "#E69F00", "aesop" = "red"))
+                                "HS" = "#E69F00", "aesop" = "red"),
+                     labels = c("South" = "ACE (South)",
+                                "South_CDF" = "ACE (South CDF)",
+                                "HS" = "ACE (HS)",
+                                "aesop" = "AESOP"))
 
 # See plot
 plot.pcb8
 
 # Save plot in folder
-ggsave("Output/Plots/Concentrations/PCB8.png", plot = plot.pcb8, width = 12,
+ggsave("Output/Plots/Concentrations/AceAesopPCB8.png", plot = plot.pcb8, width = 12,
        height = 4, dpi = 500)
 
 # PCB 15
@@ -91,9 +100,7 @@ aesop.PCB15 <- aesop_V2 %>%
 aesop.PCB15$location <- "aesop"
 aesop.PCB15 <- aesop.PCB15 %>%
   select("location", "DateCollect", "PCB15")
-# Convert to date
-aesop.PCB15$DateCollect <- as.Date(aesop.PCB15$DateCollect,
-                                  origin = "1899-12-30")
+
 # ace
 ace.PCB15 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
                        PCB15 = ace.1$PCB15)
@@ -120,7 +127,7 @@ p.pcb15 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB15, color 
 p.pcb15
 
 # Save plot in folder
-ggsave("Output/Plots/Concentrations/PCB15.png", plot = p.pcb15, width = 12,
+ggsave("Output/Plots/Concentrations/AceAesopPCB15.png", plot = p.pcb15, width = 12,
        height = 4, dpi = 500)
 
 # PCB 18+30
