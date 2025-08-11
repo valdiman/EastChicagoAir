@@ -60,7 +60,6 @@ aesop.PCB8 <- aesop_V2 %>%
 ace.PCB8 <- data.frame(source = ace.1$source,
                        DateCollect = ace.1$date,
                        PCB8 = ace.1$PCB8)
-ace.PCB8 <- ace.PCB8[, c("source", "DateCollect", "PCB8")]
 
 # Combine the datasets
 combined_data <- rbind(aesop.PCB8, ace.PCB8)
@@ -95,21 +94,18 @@ ggsave("Output/Plots/Concentrations/AceAesopPCB8.png", plot = plot.pcb8, width =
 # PCB 15
 # aesop
 aesop.PCB15 <- aesop_V2 %>%
-  select("DateCollect", "PCB15")
-aesop.PCB15$location <- "aesop"
-aesop.PCB15 <- aesop.PCB15 %>%
   select("source", "DateCollect", "PCB15")
 
 # ace
-ace.PCB15 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
-                       PCB15 = ace.1$PCB15)
-ace.PCB15_subset <- ace.PCB15[, c("location", "DateCollect", "PCB15")]
-names(ace.PCB14)[names(ace.PCB15) == "location"] <- "source"
+ace.PCB15 <- data.frame(source = ace.1$source,
+                        DateCollect = ace.1$date,
+                        PCB15 = ace.1$PCB15)
 
 # Combine the datasets
-combined_data <- rbind(aesop.PCB15, ace.PCB15_subset)
+combined_data <- rbind(aesop.PCB15, ace.PCB15)
 
-p.pcb15 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB15, color = location)) +
+p.pcb15 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB15,
+                                     color = source)) +
   geom_point(shape = 21, size = 1.5, stroke = 0.5) +
   theme_bw() +
   theme(aspect.ratio = 4/12) +
@@ -122,7 +118,11 @@ p.pcb15 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB15, color 
         axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11)) +
   scale_color_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue",
-                                "HS" = "#E69F00", "aesop" = "red"))
+                                "HS" = "#E69F00", "aesop" = "red"),
+                     labels = c("South" = "ACE (South)",
+                                "South_CDF" = "ACE (South CDF)",
+                                "HS" = "ACE (HS)",
+                                "aesop" = "AESOP"))
 
 # See plot
 p.pcb15
@@ -134,26 +134,21 @@ ggsave("Output/Plots/Concentrations/AceAesopPCB15.png", plot = p.pcb15, width = 
 # PCB 18+30
 # aesop
 aesop.PCB18 <- aesop_V2 %>%
-  select("DateCollect", "PCB18.30")
-names(aesop.PCB18$PCB18.30) <- "PCB18"
+  select("source", "DateCollect", "PCB18.30")
 
-aesop.PCB18$location <- "aesop"
-aesop.PCB18 <- aesop.PCB18 %>%
-  select("location", "DateCollect", "PCB18.30")
-# Convert to date
-aesop.PCB18$DateCollect <- as.Date(aesop.PCB18$DateCollect,
-                                   origin = "1899-12-30")
+# ace
+ace.PCB18 <- data.frame(source = ace.1$source,
+                       DateCollect = ace.1$date,
+                       PCB18.30 = ace.1$PCB18.30)
 
-ace.PCB18 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
-                        PCB18 = ace.1$PCB18.30)
-ace.PCB18_subset <- ace.PCB18[, c("location", "DateCollect", "PCB18")]
 # Combine the datasets
-combined_data <- rbind(aesop.PCB18, ace.PCB18_subset)
+combined_data <- rbind(aesop.PCB18, ace.PCB18)
 
-ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB18, color = location)) +
+p.pcb18 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB18.30,
+                                     color = source)) +
   geom_point(shape = 21, size = 1.5, stroke = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "green", linetype = "solid") +
   theme_bw() +
+  theme(aspect.ratio = 4/12) +
   labs(x = "", y = "PCBs 18+30 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
@@ -163,33 +158,38 @@ ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB18, color = location)
         axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11)) +
   scale_color_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue",
-                                "HS" = "#E69F00", "aesop" = "red"))
+                                "HS" = "#E69F00", "aesop" = "red"),
+                     labels = c("South" = "ACE (South)",
+                                "South_CDF" = "ACE (South CDF)",
+                                "HS" = "ACE (HS)",
+                                "aesop" = "AESOP"))
 
-lr.PCB18 <- lm(
-  log10(PCB18) ~ DateCollect,
-  data = combined_data,
-  subset = PCB18 > 0 & !is.na(PCB18) & !is.na(DateCollect)
-)
+# See plot
+p.pcb18
 
-summary(lr.PCB18)
+# Save plot in folder
+ggsave("Output/Plots/Concentrations/AceAesopPCB18.png", plot = p.pcb18, width = 12,
+       height = 4, dpi = 500)
 
 # PCB 20+28
-aesop.PCB28.merra <- aesop.PCB28 %>% 
-  filter(Meteo == "MERRA")
-aesop.PCB28.merra$location <- "aesop"
-ace.PCB28 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
-                       PCB28 = ace.1$PCB20.28)
-# Select relevant columns
-aesop.PCB28_subset <- aesop.PCB28.merra[, c("location", "DateCollect", "PCB28")]
-ace.PCB28_subset <- ace.PCB28[, c("location", "DateCollect", "PCB28")]
-# Combine the datasets
-combined_data <- rbind(aesop.PCB28_subset, ace.PCB28_subset)
+# aesop
+aesop.PCB20 <- aesop_V2 %>%
+  select("source", "DateCollect", "PCB20.28")
 
-ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB28, color = location)) +
-  geom_point(shape = 21, size = 2.5, stroke = 1.3, alpha = 0.7) +
+# ace
+ace.PCB20 <- data.frame(source = ace.1$source,
+                        DateCollect = ace.1$date,
+                        PCB20.28 = ace.1$PCB20.28)
+
+# Combine the datasets
+combined_data <- rbind(aesop.PCB20, ace.PCB20)
+
+p.pcb20 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB20.28,
+                                     color = source)) +
+  geom_point(shape = 21, size = 1.5, stroke = 0.5) +
   theme_bw() +
-  theme(aspect.ratio = 1/2) +
-  labs(x = "", y = "PCBs 20 + 28 concentration (ng/m3)") + 
+  theme(aspect.ratio = 4/12) +
+  labs(x = "", y = "PCBs 20+28 concentration (ng/m3)") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   geom_vline(xintercept = as.Date("2012-10-29"), color = "red", 
              linetype = "dashed", linewidth = 1) + # start of dredging
@@ -198,21 +198,34 @@ ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB28, color = location)
         axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11)) +
   scale_color_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue",
-                                "HS" = "#E69F00", "aesop" = "red"))
-  
-# PCB 31
-aesop.PCB31.merra <- aesop.PCB31 %>% 
-  filter(Meteo == "MERRA")
-aesop.PCB31.merra$location <- "aesop"
-ace.PCB31 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
-                        PCB31 = ace.1$PCB31)
-# Select relevant columns
-aesop.PCB31_subset <- aesop.PCB31.merra[, c("location", "DateCollect", "PCB31")]
-ace.PCB31_subset <- ace.PCB31[, c("location", "DateCollect", "PCB31")]
-# Combine the datasets
-combined_data <- rbind(aesop.PCB31_subset, ace.PCB31_subset)
+                                "HS" = "#E69F00", "aesop" = "red"),
+                     labels = c("South" = "ACE (South)",
+                                "South_CDF" = "ACE (South CDF)",
+                                "HS" = "ACE (HS)",
+                                "aesop" = "AESOP"))
 
-plot.pcb31 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB31, color = location)) +
+# See plot
+p.pcb20
+
+# Save plot in folder
+ggsave("Output/Plots/Concentrations/AceAesopPCB20.png", plot = p.pcb20, width = 12,
+       height = 4, dpi = 500)
+
+# PCB 31
+# aesop
+aesop.PCB31 <- aesop_V2 %>%
+  select("source", "DateCollect", "PCB31")
+
+# ace
+ace.PCB31 <- data.frame(source = ace.1$source,
+                        DateCollect = ace.1$date,
+                        PCB31 = ace.1$PCB31)
+
+# Combine the datasets
+combined_data <- rbind(aesop.PCB31, ace.PCB31)
+
+p.pcb31 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB31,
+                                     color = source)) +
   geom_point(shape = 21, size = 1.5, stroke = 0.5) +
   theme_bw() +
   theme(aspect.ratio = 4/12) +
@@ -225,11 +238,15 @@ plot.pcb31 <- ggplot(combined_data, aes(x = as.Date(DateCollect), y = PCB31, col
         axis.text.y = element_text(face = "bold", size = 10),
         axis.title.y = element_text(face = "bold", size = 11)) +
   scale_color_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue",
-                                "HS" = "#E69F00", "aesop" = "red"))
+                                "HS" = "#E69F00", "aesop" = "red"),
+                     labels = c("South" = "ACE (South)",
+                                "South_CDF" = "ACE (South CDF)",
+                                "HS" = "ACE (HS)",
+                                "aesop" = "AESOP"))
 
 # See plot
-plot.pcb31
+p.pcb31
 
 # Save plot in folder
-ggsave("Output/Plots/Concentrations/PCB31.png", plot = plot.pcb31, width = 12,
-       height = 4, dpi = 500)  
+ggsave("Output/Plots/Concentrations/AceAesopPCB31.png", plot = p.pcb31, width = 12,
+       height = 4, dpi = 500)
