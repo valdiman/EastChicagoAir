@@ -39,6 +39,7 @@ ace.1 <- ace.1 %>%
     PCB20.28_unc_label = factor(PCB20.28_unc, labels = c("≤ DL", "> DL")),
     PCB31_unc_label = factor(PCB31_unc, labels = c("≤ DL", "> DL"))
   )
+names(ace.1)[names(ace.1) == "location"] <- "source"
 
 # AESOP data --------------------------------------------------------------
 # Use only MERRA and Ampleman
@@ -47,21 +48,19 @@ aesop_V2$DateDeploy <- as.Date(aesop_V2$DateDeploy,
                              origin = "1899-12-30")
 aesop_V2$DateCollect <- as.Date(aesop_V2$DateCollect,
                                 origin = "1899-12-30")
+aesop_V2$source <- "aesop"
 
 # Both data set -----------------------------------------------------------
 # PCB 8
 # aesop
 aesop.PCB8 <- aesop_V2 %>%
-  select("DateCollect", "PCB8")
-aesop.PCB8$source <- "aesop"
-aesop.PCB8 <- aesop.PCB8 %>%
   select("source", "DateCollect", "PCB8")
 
 # ace
-ace.PCB8 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
+ace.PCB8 <- data.frame(source = ace.1$source,
+                       DateCollect = ace.1$date,
                        PCB8 = ace.1$PCB8)
-ace.PCB8_subset <- ace.PCB8[, c("location", "DateCollect", "PCB8")]
-names(ace.PCB8)[names(ace.PCB8) == "location"] <- "source"
+ace.PCB8 <- ace.PCB8[, c("source", "DateCollect", "PCB8")]
 
 # Combine the datasets
 combined_data <- rbind(aesop.PCB8, ace.PCB8)
@@ -99,12 +98,14 @@ aesop.PCB15 <- aesop_V2 %>%
   select("DateCollect", "PCB15")
 aesop.PCB15$location <- "aesop"
 aesop.PCB15 <- aesop.PCB15 %>%
-  select("location", "DateCollect", "PCB15")
+  select("source", "DateCollect", "PCB15")
 
 # ace
 ace.PCB15 <- data.frame(location = ace.1$location, DateCollect = ace.1$date,
                        PCB15 = ace.1$PCB15)
 ace.PCB15_subset <- ace.PCB15[, c("location", "DateCollect", "PCB15")]
+names(ace.PCB14)[names(ace.PCB15) == "location"] <- "source"
+
 # Combine the datasets
 combined_data <- rbind(aesop.PCB15, ace.PCB15_subset)
 
