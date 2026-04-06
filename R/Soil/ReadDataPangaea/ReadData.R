@@ -27,19 +27,21 @@ pg_cache$cache_path_set(full_path = "Data/Soil")
 # Download original datasets from Pangaea
 s.0 <- pg_data(doi = '10.1594/PANGAEA.941881') # soil dataset
 b.0 <- pg_data(doi = '10.1594/PANGAEA.941686') # blank dataset
+toc.0 <- pg_data(doi = '10.1594/PANGAEA.941884') # toc dataset
 
-# Obtain just concentrations from Pangaea dataset
+# Obtain concentrations from Pangaea dataset
 s <- data.frame(s.0[[1]]$data) # ng/g
 b <- data.frame(b.0[[1]]$data)
+toc <- data.frame(toc.0[[1]]$data)
 
 # Format concentration data for plotting
 # Remove metadata from soil dataset
-s.1 <- s[, !(names(s) %in% c("Event", "Method.comm", "Distance..m...Distance.to.Fork."))]
+s.1 <- s[, !(names(s) %in% c("Event", "Method.comm"))]
 # Rename PCB congener in columns in s.1
 names(s.1) <- gsub(".*PCB([0-9\\.]+)\\.$", "PCB\\1", names(s.1))
 # Remove and save metadata
-s.1.metadta <- subset(s.1, select = c(Sample.label:Date.time.end))
-s.2 <- subset(s.1, select = -c(Sample.label:Date.time.end))
+s.1.metadata <- subset(s.1, select = c(Sample.label:Distance..m...Distance.to.Fork.))
+s.2 <- subset(s.1, select = -c(Sample.label:Distance..m...Distance.to.Fork.))
 
 # Remove metadata from blank dataset
 b.1 <- subset(b, select = -c(Event:Date.time.end))
@@ -91,8 +93,13 @@ for(i in 1:dim(s.4)[1]) {
 
 # Final dataset for concentrations, s.3
 colnames(s.4) <- colnames(s.3) # add PCB names to columns.
-
-s.5 <- cbind(s.1.metadta, s.4)
+# Add metadata
+s.5 <- cbind(s.1.metadata, s.4)
+# Add toc
+s.5 <- cbind(s.5 , toc$TOC....)
+# Change names
+names(s.5)[names(s.5) == "Distance..m...Distance.to.Fork."] <- "distancefork"
+names(s.5)[names(s.5) == "toc$TOC...."] <- "toc"
 
 # export data
 write.csv(s.5, "Output/Data/Soil/PCBEastChicagoSoil.csv", row.names = FALSE)
