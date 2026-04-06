@@ -20,9 +20,8 @@ install.packages(c("gstat", "sp", "sf", "raster", "ape", "viridis"))
 # Read data ---------------------------------------------------------------
 pcb_soil <- read.csv("Output/Data/Soil/PCBEastChicagoSoil.csv",
                      check.names = FALSE, header = TRUE)
-# remove first column
-pcb_soil <- pcb_soil[, names(pcb_soil) != ""]
 
+# Calculate tPCB
 pcb_soil$tpcb <- rowSums(pcb_soil[, 6:133])
 
 # Select total PCB

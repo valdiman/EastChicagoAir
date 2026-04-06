@@ -53,8 +53,6 @@ loq <- colMeans(log10b.1, na.rm = TRUE) + 1.96*sapply(log10b.1, sd, na.rm = TRUE
 loq <- data.frame(t(loq))
 
 # Make comparison between s.1 and loq
-
-
 # If s.1 > loq, then s.1, if not 0
 # Create matrix to storage s.1 or loq values in s.3
 s.3 <- matrix(NA, nrow = dim(s.2)[1], ncol = dim(s.2)[2])
@@ -97,5 +95,5 @@ colnames(s.4) <- colnames(s.3) # add PCB names to columns.
 s.5 <- cbind(s.1.metadta, s.4)
 
 # export data
-write.csv(s.5, "Output/Data/Soil/PCBEastChicagoSoil.csv")
+write.csv(s.5, "Output/Data/Soil/PCBEastChicagoSoil.csv", row.names = FALSE)
 
