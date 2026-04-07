@@ -1,21 +1,21 @@
 # Code to create sub folders
 
 dir.create("R")
-dir.create("R/Analysis")
-dir.create("R/ConcentrationCalculations")
+dir.create("R/AirConcentrationCalculations")
 dir.create("R/PUFPASModel")
 dir.create("R/Flux")
+dir.create("R/SoilAirExchange")
 dir.create("R/Soil")
-dir.create("R/Soil/Kriging")
-dir.create("R/Soil/ReadDataPangaea")
 
 dir.create("Data")
 dir.create("Data/PUFPASModel")
 dir.create("Data/Flux")
 dir.create("Data/Soil")
+dir.create("Data/PCProperties")
 
 dir.create("Output")
 dir.create("Output/Data")
+dir.create("Output/Data/Air")
 dir.create("Output/Data/Soil")
 
 dir.create("Output/PUFPASModel")
