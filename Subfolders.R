@@ -8,6 +8,7 @@ dir.create("R/SoilAirExchange")
 dir.create("R/Soil")
 
 dir.create("Data")
+dir.create("Data/Air")
 dir.create("Data/PUFPASModel")
 dir.create("Data/Flux")
 dir.create("Data/Soil")

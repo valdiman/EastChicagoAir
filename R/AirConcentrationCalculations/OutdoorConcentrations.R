@@ -18,8 +18,8 @@ install.packages("ggplot")
 }
 
 # Read Excel data ---------------------------------------------------------
-ace <- read.csv("Data/ACEData.csv")
-aesop <- read.csv("Output/Data/csv/ConcentrationPUF.csv")
+ace <- read.csv("Data/Air/ACEData.csv")
+aesop <- read.csv("Output/Data/Air/ConcentrationPUF.csv")
 
 # ACE Data ----------------------------------------------------------------
 # Remove blanks cells
