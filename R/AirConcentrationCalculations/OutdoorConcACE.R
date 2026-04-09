@@ -6,8 +6,10 @@
 
 # Packages and libraries needed -------------------------------------------------------------------
 # Install packages
-install.packages("dplyr")
-install.packages("ggplot")
+{
+  install.packages("dplyr")
+  install.packages("ggplot")
+}
 
 # Library
 {
@@ -40,7 +42,8 @@ ace.1 <- ace.1 %>%
     PCB31_unc_label = factor(PCB31_unc, labels = c("≤ DL", "> DL"))
   )
 
-# Plots -------------------------------------------------------------------
+# Individual sites --------------------------------------------------------
+# Plots
 #PCB 8
 p.pcb8 <- ggplot(ace.1, aes(x = as.Date(date), y = PCB8)) +
   geom_point(aes(shape = PCB8_unc_label, fill = location,
@@ -248,13 +251,153 @@ summary(lr.PCB31)
 ggsave("Output/Plots/Concentrations/AcePCB31.png", plot = p.pcb31, width = 12,
        height = 4, dpi = 500)
 
-# Only HS
+# Get south locations together and HS -------------------------------------
+ace.1$location2 <- ifelse(grepl("South", ace.1$location), "South", "HS")
+ace.1$location2 <- factor(ace.1$location2)
+
+# South
 #PCB 8
-p.pcb8 <- ggplot(subset(ace.1, location == "HS"), aes(x = date, y = PCB8)) +
+p.pcb8 <- ggplot(subset(ace.1, location2 == "South"), aes(x = date, y = PCB8)) +
   geom_point(
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black",          # ← this controls the edge
     size = 2.5, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  theme_bw() +
+  labs(x = "", y = "PCB 8 concentration (ng/m3)") +
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+  )
+
+# See plot
+p.pcb8
+
+# PCB 15
+p.pcb15 <- ggplot(subset(ace.1, location2 == "South"), aes(x = date, y = PCB15)) +
+  geom_point(
+    aes(shape = PCB15_unc_label, fill = PCB15_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2.5, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  theme_bw() +
+  labs(x = "", y = "PCB 15 concentration (ng/m3)") +
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+    )
+
+# See plot
+p.pcb15
+
+# PCB 18+30
+p.pcb18 <- ggplot(subset(ace.1, location2 == "South"), aes(x = date, y = PCB18.30)) +
+  geom_point(
+    aes(shape = PCB18.30_unc_label, fill = PCB18.30_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2.5, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  theme_bw() +
+  labs(x = "", y = "PCB 18+30 concentration (ng/m3)") +
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+  )
+
+# See plot
+p.pcb18
+
+# PCB 20+28
+p.pcb20 <- ggplot(subset(ace.1, location2 == "South"), aes(x = date, y = PCB20.28)) +
+  geom_point(
+    aes(shape = PCB20.28_unc_label, fill = PCB20.28_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2.5, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  theme_bw() +
+  labs(x = "", y = "PCB 20+28 concentration (ng/m3)") +
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+  )
+
+# See plot
+p.pcb20
+
+# PCB 31
+p.pcb31 <- ggplot(subset(ace.1, location2 == "South"), aes(x = date, y = PCB31)) +
+  geom_point(
+    aes(shape = PCB31_unc_label, fill = PCB31_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2.5, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  theme_bw() +
+  labs(x = "", y = "PCB 31 concentration (ng/m3)") +
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+  )
+
+# See plot
+p.pcb31
+
+# HS
+p.pcb8 <- ggplot(subset(ace.1, location2 == "HS"), aes(x = date, y = PCB8)) +
+  geom_point(
+    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2, stroke = 0.75
   ) +
   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
   
@@ -280,11 +423,143 @@ p.pcb8 <- ggplot(subset(ace.1, location == "HS"), aes(x = date, y = PCB8)) +
 # See plot
 p.pcb8
 
-# Linear regression analysis
-lr.PCB8 <- lm(
-  log10(PCB8) ~ date,
-  data = ace.1,
-  subset = PCB8 > 0 & !is.na(PCB8) & !is.na(date)
-)
-summary(lr.PCB8)
+ggsave("Output/Plots/Concentrations/AcePCB8_HS.png", plot = p.pcb8, width = 12,
+       height = 4, dpi = 500)
+
+# PCB 15
+p.pcb15 <- ggplot(subset(ace.1, location2 == "HS"), aes(x = date, y = PCB15)) +
+  geom_point(
+    aes(shape = PCB15_unc_label, fill = PCB15_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  
+  theme_bw() +
+  labs(x = "", y = "PCB 15 concentration (ng/m3)") +
+  
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+  )
+
+# See plot
+p.pcb15
+
+ggsave("Output/Plots/Concentrations/AcePCB15_HS.png", plot = p.pcb15, width = 12,
+       height = 4, dpi = 500)
+
+# PCB 18
+p.pcb18 <- ggplot(subset(ace.1, location2 == "HS"), aes(x = date, y = PCB18.30)) +
+  geom_point(
+    aes(shape = PCB18.30_unc_label, fill = PCB18.30_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  
+  theme_bw() +
+  labs(x = "", y = "PCB 18 concentration (ng/m3)") +
+  
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+  )
+
+# See plot
+p.pcb18
+
+ggsave("Output/Plots/Concentrations/AcePCB18_HS.png", plot = p.pcb18, width = 12,
+       height = 4, dpi = 500)
+
+# PCB20.28
+p.pcb20 <- ggplot(subset(ace.1, location2 == "HS"), aes(x = date, y = PCB20.28)) +
+  geom_point(
+    aes(shape = PCB20.28_unc_label, fill = PCB20.28_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  
+  theme_bw() +
+  labs(x = "", y = "PCB 20+28 concentration (ng/m3)") +
+  
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+  )
+
+# See plot
+p.pcb20
+
+ggsave("Output/Plots/Concentrations/AcePCB20_HS.png", plot = p.pcb20, width = 12,
+       height = 4, dpi = 500)
+
+# PCB 31
+p.pcb31 <- ggplot(subset(ace.1, location2 == "HS"), aes(x = date, y = PCB31)) +
+  geom_point(
+    aes(shape = PCB31_unc_label, fill = PCB31_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  
+  theme_bw() +
+  labs(x = "", y = "PCB 31 concentration (ng/m3)") +
+  
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+  )
+
+# See plot
+p.pcb31
+
+ggsave("Output/Plots/Concentrations/AcePCB31_HS.png", plot = p.pcb31, width = 12,
+       height = 4, dpi = 500)
+
 
