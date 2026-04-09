@@ -27,8 +27,9 @@ ace.1 <- subset(ace, !grepl("0", location))
 ace.1 <- ace.1 %>%
   mutate(across(starts_with("PCB") & !ends_with("_unc"), ~ . / 1000))
 ace.1 <- ace.1 %>%
-  mutate(location = factor(location, levels = c("South", "South_CDF", "HS")))  # Explicit factor levels
+  mutate(location = factor(location, levels = c("South", "South_CDF", "HS", "Con_South")))  # Explicit factor levels
 # Convert numeric date to Date format assuming Excel-style serial number
+# ccvs file needs to be this format for the date XXXXX (e.g., 41188)
 ace.1$date <- as.Date(ace.1$date, origin = "1899-12-30")
 ace.1 <- ace.1 %>%
   mutate(
@@ -45,9 +46,11 @@ p.pcb8 <- ggplot(ace.1, aes(x = as.Date(date), y = PCB8)) +
   geom_point(aes(shape = PCB8_unc_label, fill = location,
                  color = location), size = 1.5, stroke = 0.5) +
   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
-  scale_fill_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue", "HS" = "#E69F00")) +
-  scale_color_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue", "HS" = "#E69F00")) +
-  scale_shape_manual(values = c("≤ DL" = 21, "> DL" = 1)) +
+  scale_fill_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue", "Con_South" = "green",
+                               "HS" = "#E69F00")) +
+  scale_color_manual(values = c("South" = "#00BFC4", "South_CDF" = "blue", "Con_South" = "green",
+                                "HS" = "#E69F00")) +
+  scale_shape_manual(values = c("≤ DL" = 21, "> DL" = 1)) + # 21 is filled
   theme_bw() +
   labs(x  = "", y = "PCB 8 concentration (ng/m3)", fill = "Location", color = "Location") + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
@@ -244,3 +247,44 @@ summary(lr.PCB31)
 # Save plot in folder
 ggsave("Output/Plots/Concentrations/AcePCB31.png", plot = p.pcb31, width = 12,
        height = 4, dpi = 500)
+
+# Only HS
+#PCB 8
+p.pcb8 <- ggplot(subset(ace.1, location == "HS"), aes(x = date, y = PCB8)) +
+  geom_point(
+    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
+    color = "black",          # ← this controls the edge
+    size = 2.5, stroke = 0.75
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid") +
+  
+  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
+  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  
+  geom_vline(xintercept = as.Date("2012-10-29"), color = "red",
+             linetype = "dashed", linewidth = 1) +
+  
+  theme_bw() +
+  labs(x = "", y = "PCB 8 concentration (ng/m3)") +
+  
+  theme(
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
+    axis.text.y = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 11),
+    legend.position = "right",
+    legend.key = element_blank()
+  )
+
+# See plot
+p.pcb8
+
+# Linear regression analysis
+lr.PCB8 <- lm(
+  log10(PCB8) ~ date,
+  data = ace.1,
+  subset = PCB8 > 0 & !is.na(PCB8) & !is.na(date)
+)
+summary(lr.PCB8)
+
