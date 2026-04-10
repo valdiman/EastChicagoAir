@@ -7,6 +7,7 @@ dir.create("R/Flux")
 dir.create("R/SoilAirExchange")
 dir.create("R/Soil")
 dir.create("R/DataAcquisitionNOAA")
+dir.create("R/AirChicagoData")
 
 dir.create("Data")
 dir.create("Data/Air")
