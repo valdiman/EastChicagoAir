@@ -1,5 +1,4 @@
-# concentration Analysis
-# ACE data
+# Concentration Analysis - ACE data
 # https://indianaharbor.evs.anl.gov/about-project/timeline/index.cfm
 # https://indianaharbor.evs.anl.gov/dredging/
 # https://indianaharbor.evs.anl.gov/data/ambient/
@@ -22,7 +21,7 @@
 }
 
 # Read data ---------------------------------------------------------------
-ace <- read.csv("Data/Air/ACEData.csv")
+ace <- read.csv("Data/Air/IHSC/ACEData.csv")
 
 # ACE Data ----------------------------------------------------------------
 # Remove blanks cells
@@ -267,38 +266,69 @@ p.pcb8 <- ggplot(subset(ace.1, location2 == "South"),
                  aes(x = date, y = PCB8)) +
   geom_rect(
     data = data.frame(
-      xmin = as.Date(c("2012-11-01","2013-04-01","2014-05-01","2015-05-01",
-                       "2016-09-01","2017-09-01","2018-01-01",
-                       "2003-07-01","2021-07-01")),
-      xmax = as.Date(c("2012-12-31","2013-08-31","2014-07-31","2015-08-31",
-                       "2016-11-30","2017-12-31","2020-12-31",
-                       "2010-12-31","2024-06-30")),
-      band = c(rep("Dredging", 7),
-               "CDF Dike Construction",
-               "Phase 2 Dike Project")),
+      xmin = as.Date(c(
+        "2012-11-01",
+        "2013-04-01",
+        "2014-05-01",
+        "2015-05-01",
+        "2016-09-01",
+        "2017-09-01",
+        "2018-06-01",
+        "2019-06-01",
+        "2020-10-01",
+        "2024-09-01",
+        "2003-07-01",
+        "2021-07-01"
+      )),
+      xmax = as.Date(c(
+        "2012-12-31",
+        "2013-08-31",
+        "2014-07-31",
+        "2015-08-31",
+        "2016-11-30",
+        "2017-12-31",
+        "2018-09-30",
+        "2019-10-31",
+        "2020-12-31",
+        "2024-11-30",
+        "2010-12-31",
+        "2024-06-30"
+      )),
+      band = c(
+        rep("Dredging", 10),
+        "CDF Dike Construction",
+        "Phase 2 Dike Project"
+      )
+    ),
     aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = band),
-    inherit.aes = FALSE, alpha = 0.3) +
+    inherit.aes = FALSE,
+    alpha = 0.3
+  ) +
   scale_fill_manual(
     name = "Project phase",
     values = c(
       "Dredging" = "#F4A6B7",
       "CDF Dike Construction" = "lightgreen",
-      "Phase 2 Dike Project" = "lightblue")) +
+      "Phase 2 Dike Project" = "lightblue"
+    )
+  ) +
   ggnewscale::new_scale_fill() +
   geom_point(
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75) +
+    color = "black", size = 2.5, stroke = 0.75
+  ) +
   scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
   scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 8 concentration @ CDF (ng/m3)") +
   theme(
-    axis.text.x = element_text(face = "bold", size = 7,color = "black", angle = 60, hjust = 1),
+    axis.text.x = element_text(face = "bold", size = 7, color = "black", angle = 60, hjust = 1),
     axis.text.y = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 11),
     legend.position = "right",
-    legend.key = element_blank())
+    legend.key = element_blank()
+  )
 
 # See plot
 p.pcb8
@@ -489,23 +519,52 @@ ggsave("Output/Plots/Concentrations/AcePCB31_CDF.png", plot = p.pcb31, width = 1
 p.pcb8 <- ggplot(subset(ace.1, location2 == "HS"), aes(x = date, y = PCB8)) +
   geom_rect(
     data = data.frame(
-      xmin = as.Date(c("2012-11-01","2013-04-01","2014-05-01","2015-05-01",
-                       "2016-09-01","2017-09-01","2018-01-01",
-                       "2003-07-01","2021-07-01")),
-      xmax = as.Date(c("2012-12-31","2013-08-31","2014-07-31","2015-08-31",
-                       "2016-11-30","2017-12-31","2020-12-31",
-                       "2010-12-31","2024-06-30")),
-      band = c(rep("Dredging", 7),
-               "CDF Dike Construction",
-               "Phase 2 Dike Project")),
+      xmin = as.Date(c(
+        "2012-11-01",
+        "2013-04-01",
+        "2014-05-01",
+        "2015-05-01",
+        "2016-09-01",
+        "2017-09-01",
+        "2018-06-01",
+        "2019-06-01",
+        "2020-10-01",
+        "2024-09-01",
+        "2003-07-01",
+        "2021-07-01"
+      )),
+      xmax = as.Date(c(
+        "2012-12-31",
+        "2013-08-31",
+        "2014-07-31",
+        "2015-08-31",
+        "2016-11-30",
+        "2017-12-31",
+        "2018-09-30",
+        "2019-10-31",
+        "2020-12-31",
+        "2024-11-30",
+        "2010-12-31",
+        "2024-06-30"
+      )),
+      band = c(
+        rep("Dredging", 10),
+        "CDF Dike Construction",
+        "Phase 2 Dike Project"
+      )
+    ),
     aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = band),
-    inherit.aes = FALSE, alpha = 0.3) +
+    inherit.aes = FALSE,
+    alpha = 0.3
+  ) +
   scale_fill_manual(
     name = "Project phase",
     values = c(
       "Dredging" = "#F4A6B7",
       "CDF Dike Construction" = "lightgreen",
-      "Phase 2 Dike Project" = "lightblue")) +
+      "Phase 2 Dike Project" = "lightblue"
+    )
+  ) +
   ggnewscale::new_scale_fill() +
   geom_point(
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
@@ -661,23 +720,52 @@ ggsave("Output/Plots/Concentrations/AcePCB20_HS.png", plot = p.pcb20, width = 12
 p.pcb31 <- ggplot(subset(ace.1, location2 == "HS"), aes(x = date, y = PCB31)) +
   geom_rect(
     data = data.frame(
-      xmin = as.Date(c("2012-11-01","2013-04-01","2014-05-01","2015-05-01",
-                       "2016-09-01","2017-09-01","2018-01-01",
-                       "2003-07-01","2021-07-01")),
-      xmax = as.Date(c("2012-12-31","2013-08-31","2014-07-31","2015-08-31",
-                       "2016-11-30","2017-12-31","2020-12-31",
-                       "2010-12-31","2024-06-30")),
-      band = c(rep("Dredging", 7),
-               "CDF Dike Construction",
-               "Phase 2 Dike Project")),
+      xmin = as.Date(c(
+        "2012-11-01",
+        "2013-04-01",
+        "2014-05-01",
+        "2015-05-01",
+        "2016-09-01",
+        "2017-09-01",
+        "2018-06-01",
+        "2019-06-01",
+        "2020-10-01",
+        "2024-09-01",
+        "2003-07-01",
+        "2021-07-01"
+      )),
+      xmax = as.Date(c(
+        "2012-12-31",
+        "2013-08-31",
+        "2014-07-31",
+        "2015-08-31",
+        "2016-11-30",
+        "2017-12-31",
+        "2018-09-30",
+        "2019-10-31",
+        "2020-12-31",
+        "2024-11-30",
+        "2010-12-31",
+        "2024-06-30"
+      )),
+      band = c(
+        rep("Dredging", 10),
+        "CDF Dike Construction",
+        "Phase 2 Dike Project"
+      )
+    ),
     aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = band),
-    inherit.aes = FALSE, alpha = 0.3) +
+    inherit.aes = FALSE,
+    alpha = 0.3
+  ) +
   scale_fill_manual(
     name = "Project phase",
     values = c(
       "Dredging" = "#F4A6B7",
       "CDF Dike Construction" = "lightgreen",
-      "Phase 2 Dike Project" = "lightblue")) +
+      "Phase 2 Dike Project" = "lightblue"
+    )
+  ) +
   ggnewscale::new_scale_fill() +
   geom_point(
     aes(shape = PCB31_unc_label, fill = PCB31_unc_label),
