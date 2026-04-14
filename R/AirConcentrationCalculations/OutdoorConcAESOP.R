@@ -15,7 +15,7 @@ install.packages("ggplot")
 }
 
 # Read data ---------------------------------------------------------------
-aesop <- read.csv("Output/Data/csv/ConcentrationPUF.csv")
+aesop <- read.csv("Output/Data/Air/ConcentrationPUF.csv")
 
 # tPCB
 aesop.tPCB <- rowSums(aesop[, 4:176], na.rm = TRUE)
