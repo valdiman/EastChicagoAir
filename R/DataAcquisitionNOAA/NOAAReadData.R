@@ -5,11 +5,13 @@
 
 # Packages and libraries needed --------------------------------------------
 # Install packages
-install.packages("rnoaa") # For future use, noaaweather package will need to be installed it.
-install.packages("leaflet")
-install.packages("dplyr")
-install.packages("stringr")
-install.packages("geosphere")
+{
+  install.packages("rnoaa") # For future use, noaaweather package will need to be installed it.
+  install.packages("leaflet")
+  install.packages("dplyr")
+  install.packages("stringr")
+  install.packages("geosphere")
+}
 
 # Libraries
 {
@@ -38,11 +40,11 @@ stations_nearby <- stations %>%
   filter(distance_km <= 50)
 
 # Select the nearest major station (1: CHICAGO MIDWAY INTL ARPT; 2: GARY/CHICAGO AIRPORT)
-station.1 <- stations[stations$usaf == "725340", ] # 2001:2005
+station.1 <- stations[stations$usaf == "725340", ] # 2001:2005 (1973:2025)
 station.2 <- stations[stations$usaf == "725337", ] # 2006:2023
 
 # Read ACE Data
-ace <- read.csv("Data/Air/ACEData.csv")
+ace <- read.csv("Data/Air/EastChicago/ACEData.csv")
 # Remove blanks cells
 ace.1 <- subset(ace, !grepl("0", location))
 ace.1$date <- as.Date(ace.1$date, origin = "1899-12-30")
@@ -148,15 +150,17 @@ weather_daily <- weather_daily %>%
   ) %>%
   select(-air_temp_station1)
 
-ace.1 <- ace.1 %>%
+meteo_EastChicago <- ace.1 %>%
+  select(location, date) %>%
   left_join(weather_daily, by = "date")
 
 # Check values
-summary(ace.1$air_temp)
-summary(ace.1$wind_speed)
-summary(ace.1$air_pressure)
-summary(ace.1$wind_direction)
+summary(meteo_EastChicago$air_temp)
+summary(meteo_EastChicago$wind_speed)
+summary(meteo_EastChicago$air_pressure)
+summary(meteo_EastChicago$wind_direction)
 
 # Save
-write.csv(ace.1, "Data/Meteorology/ace.1IHSC_Meteo.csv", row.names = FALSE)
+write.csv(meteo_EastChicago, "Output/Data/Air/Meteo_EastChicago.csv",
+          row.names = FALSE)
 
