@@ -44,7 +44,7 @@ station.1 <- stations[stations$usaf == "725340", ] # 2001:2005 (1973:2025)
 station.2 <- stations[stations$usaf == "725337", ] # 2006:2023
 
 # Read ACE Data
-ace <- read.csv("Data/Air/EastChicago/ACEData.csv")
+ace <- read.csv("Data/Air/EastChicago/ACE/ACEData.csv")
 # Remove blanks cells
 ace.1 <- subset(ace, !grepl("0", location))
 ace.1$date <- as.Date(ace.1$date, origin = "1899-12-30")
@@ -161,6 +161,6 @@ summary(meteo_EastChicago$air_pressure)
 summary(meteo_EastChicago$wind_direction)
 
 # Save
-write.csv(meteo_EastChicago, "Output/Data/Air/Meteo_EastChicago.csv",
+write.csv(meteo_EastChicago, "Data/Air/EastChicago/ACE/Meteo_EastChicago.csv",
           row.names = FALSE)
 
