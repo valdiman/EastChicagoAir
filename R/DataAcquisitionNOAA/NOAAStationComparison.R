@@ -63,13 +63,6 @@ station.1_wban <- as.character(station.1$wban)
 station.2_usaf <- as.character(station.2$usaf)
 station.2_wban <- as.character(station.2$wban)
 
-if (is.na(station.1_wban) || station.1_wban == "") {
-  stop("Station 1 WBAN is missing. Check the station metadata.")
-}
-if (is.na(station.2_wban) || station.2_wban == "") {
-  stop("Station 2 WBAN is missing. Check the station metadata.")
-}
-
 # ------------------------------------------------------------
 # 5) Helper function to download ISD data for a range of years
 # ------------------------------------------------------------

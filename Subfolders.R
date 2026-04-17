@@ -24,6 +24,7 @@ dir.create("Data/Extra/Flux")
 dir.create("Data/Extra/Soil")
 dir.create("Data/Meteorology")
 dir.create("Data/PCProperties")
+dir.create("Data/RemediationProject")
 
 dir.create("Output")
 dir.create("Output/Data")
