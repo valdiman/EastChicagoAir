@@ -9,6 +9,7 @@
 .Rhistory
 .RData
 .Ruserdata
+Output/
 
 # macOS-specific files
 .DS_Store
@@ -27,3 +28,5 @@
 *.json
 *.xlsx
 *.txt
+
+
