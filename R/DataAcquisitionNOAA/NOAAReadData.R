@@ -151,7 +151,7 @@ weather_daily <- weather_daily %>%
   select(-air_temp_station1)
 
 meteo_EastChicago <- ace.1 %>%
-  select(location, date) %>%
+  select(date) %>%
   left_join(weather_daily, by = "date")
 
 # Check values
@@ -161,6 +161,6 @@ summary(meteo_EastChicago$air_pressure)
 summary(meteo_EastChicago$wind_direction)
 
 # Save
-write.csv(meteo_EastChicago, "Data/Air/EastChicago/ACE/Meteo_EastChicago.csv",
+write.csv(meteo_EastChicago, "Data/Meteorology/Meteo_EastChicago.csv",
           row.names = FALSE)
 
