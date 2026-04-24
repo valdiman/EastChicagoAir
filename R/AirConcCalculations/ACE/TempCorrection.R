@@ -1,10 +1,12 @@
-# Code to normalize ACC PCB concentation to 288 K
+# Partial pressure calculations, temperature effects, and 288 K normalization
 
 # Packages and libraries needed -------------------------------------------------------------------
 # Install packages
 {
   install.packages("dplyr")
   install.packages("ggplot")
+  install.packages("lubridate")
+  install.packages("fuzzyjoin")
 }
 
 # Library
@@ -12,6 +14,8 @@
   library(dplyr)
   library(ggplot2)
   library(tidyr)
+  library(lubridate)
+  library(fuzzyjoin)
 }
 
 # Read data ---------------------------------------------------------------
@@ -55,10 +59,10 @@ mw.pcb <- data.frame(
 )
 
 # Calculate Pp for each PCB
-# Check order
+# Check order btw concentration and meteorology data
 all(ace$date == air.temp$date)
 
-R <- 8.2057e-5
+R <- 8.2057e-5 # [m3/mol/K]
 mw_vec <- setNames(mw.pcb$mw, mw.pcb$PCB)
 
 ace_pp <- ace %>%
@@ -72,96 +76,20 @@ ace_pp <- ace %>%
   ) %>%
   select(date, PCB8, PCB15, PCB18.30, PCB20.28, PCB31)
 
-# Plots both sites
-df <- ace_pp %>%
+# Plots for each site
+# Add 1/temp to ace_pp
+ace_pp_temp <- ace_pp %>%
   mutate(invT = 1000 / air.temp$air_temp)
 
-fit.pcb8 <- lm(log(PCB8) ~ invT, data = df)
-summary(fit.pcb8)
-
-r2.pcb8 <- summary(fit.pcb8)$r.squared
-pval.pcb8 <- summary(fit.pcb8)$coefficients[2, 4]
-
-ggplot(df, aes(x = invT, y = log(PCB8))) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  annotate("text",
-           x = min(df$invT),
-           y = max(log(df$PCB8) + 0.4, na.rm = TRUE),
-           hjust = 0,
-           label = paste0("R² = ", round(r2.pcb8, 3),
-                          "\np = ", signif(pval.pcb8, 3))) +
-  labs(x = "1000 / T (1/K)", y = "ln(PCB8)") +
-  theme_minimal()
-
-fit.pcb15 <- lm(log(PCB15) ~ invT, data = df)
-summary(fit.pcb15)
-
-r2.pcb15 <- summary(fit.pcb15)$r.squared
-pval.pcb15 <- summary(fit.pcb15)$coefficients[2, 4]
-
-ggplot(df, aes(x = invT, y = log(PCB15))) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  annotate("text",
-           x = min(df$invT),
-           y = max(log(df$PCB15) + 0.4, na.rm = TRUE),
-           hjust = 0,
-           label = paste0("R² = ", round(r2.pcb15, 3),
-                          "\np = ", signif(pval.pcb15, 3))) +
-  labs(x = "1000 / T (1/K)", y = "ln(PCB15)") +
-  theme_minimal()
-
-fit.pcb20 <- lm(log(PCB20.28) ~ invT, data = df)
-summary(fit.pcb20)
-
-r2.pcb20 <- summary(fit.pcb20)$r.squared
-pval.pcb20 <- summary(fit.pcb20)$coefficients[2, 4]
-
-ggplot(df, aes(x = invT, y = log(PCB20.28))) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  annotate("text",
-           x = min(df$invT),
-           y = max(log(df$PCB20.28) + 0.4, na.rm = TRUE),
-           hjust = 0,
-           label = paste0("R² = ", round(r2.pcb20, 3),
-                          "\np = ", signif(pval.pcb20, 3))) +
-  labs(x = "1000 / T (1/K)", y = "ln(PCB20+28)") +
-  theme_minimal()
-
-fit.pcb31 <- lm(log(PCB31) ~ invT, data = df)
-summary(fit.pcb31)
-
-r2.pcb31 <- summary(fit.pcb31)$r.squared
-pval.pcb31 <- summary(fit.pcb31)$coefficients[2, 4]
-
-ggplot(df, aes(x = invT, y = log(PCB31))) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  annotate("text",
-           x = min(df$invT),
-           y = max(log(df$PCB31) + 0.4, na.rm = TRUE),
-           hjust = 0,
-           label = paste0("R² = ", round(r2.pcb31, 3),
-                          "\np = ", signif(pval.pcb31, 3))) +
-  labs(x = "1000 / T (1/K)", y = "ln(PCB31)") +
-  theme_minimal()
-
-# Plots for each site
-df$location <- ace$location2
-
-df2 <- df %>%
-  filter(location %in% c("HS", "South")) %>%
-  mutate(location = factor(location, levels = c("HS", "South")))
+# Add locations to ace_pp_temp
+ace_pp_temp$location <- ace$location2
 
 # PCB 8
-stats <- df2 %>%
+stats <- ace_pp_temp %>%
   group_by(location) %>%
   group_modify(~{
     fit <- lm(log(PCB8) ~ invT, data = .x)
     s <- summary(fit)
-    
     tibble(
       r2 = s$r.squared,
       pval = s$coefficients[2, 4],
@@ -177,7 +105,7 @@ stats <- df2 %>%
   }) %>%
   ungroup()
 
-ggplot(df2, aes(x = invT, y = log(PCB8))) +
+p.pp.pcb8 <- ggplot(ace_pp_temp, aes(x = invT, y = log(PCB8))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~location) +
@@ -187,17 +115,24 @@ ggplot(df2, aes(x = invT, y = log(PCB8))) +
     inherit.aes = FALSE,
     hjust = -0.1,
     vjust = 1.1) +
-  coord_cartesian(ylim = c(-37, -29)) +
-  labs(x = "1000 / T (1/K)", y = "ln(PCB8)") +
-  theme_minimal()
+  coord_cartesian(ylim = c(-37, -30)) +
+  labs(x = "1000 / T (1/K)", y = "ln(PCB 8)") +
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
+
+# see plot
+p.pp.pcb8
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB8_Pp_CDF_HS.png", plot = p.pp.pcb8,
+       width = 12, height = 6, dpi = 500)
 
 # PCB 15
-stats <- df2 %>%
+stats <- ace_pp_temp %>%
   group_by(location) %>%
   group_modify(~{
     fit <- lm(log(PCB15) ~ invT, data = .x)
     s <- summary(fit)
-    
     tibble(
       r2 = s$r.squared,
       pval = s$coefficients[2, 4],
@@ -213,7 +148,7 @@ stats <- df2 %>%
   }) %>%
   ungroup()
 
-ggplot(df2, aes(x = invT, y = log(PCB15))) +
+p.pp.pcb15 <- ggplot(ace_pp_temp, aes(x = invT, y = log(PCB15))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~location) +
@@ -223,17 +158,24 @@ ggplot(df2, aes(x = invT, y = log(PCB15))) +
     inherit.aes = FALSE,
     hjust = -0.1,
     vjust = 1.1) +
-  coord_cartesian(ylim = c(-37, -30.5)) +
+  coord_cartesian(ylim = c(-37, -31)) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 15)") +
-  theme_minimal()
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
 
-# PCB 20+28
-stats <- df2 %>%
+# see plot
+p.pp.pcb15
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB15_Pp_CDF_HS.png", plot = p.pp.pcb15,
+       width = 12, height = 6, dpi = 500)
+
+# PCB 18.30
+stats <- ace_pp_temp %>%
   group_by(location) %>%
   group_modify(~{
-    fit <- lm(log(PCB20.28) ~ invT, data = .x)
+    fit <- lm(log(PCB18.30) ~ invT, data = .x)
     s <- summary(fit)
-    
     tibble(
       r2 = s$r.squared,
       pval = s$coefficients[2, 4],
@@ -243,13 +185,13 @@ stats <- df2 %>%
                       s$r.squared,
                       s$coefficients[2, 4]),
       x = min(.x$invT),
-      y = max(log(.x$PCB8), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB20.28), na.rm = TRUE) - min(log(.x$PCB20.28), na.rm = TRUE))
+      y = max(log(.x$PCB18.30), na.rm = TRUE) -
+        0.05 * (max(log(.x$PCB18.30), na.rm = TRUE) - min(log(.x$PCB18.30), na.rm = TRUE))
     )
   }) %>%
   ungroup()
 
-ggplot(df2, aes(x = invT, y = log(PCB20.28))) +
+p.pp.pcb18 <- ggplot(ace_pp_temp, aes(x = invT, y = log(PCB18.30))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~location) +
@@ -259,17 +201,67 @@ ggplot(df2, aes(x = invT, y = log(PCB20.28))) +
     inherit.aes = FALSE,
     hjust = -0.1,
     vjust = 1.1) +
-  coord_cartesian(ylim = c(-37, -28)) +
+  coord_cartesian(ylim = c(-37, -29)) +
+  labs(x = "1000 / T (1/K)", y = "ln(PCB 18+30)") +
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
+
+# see plot
+p.pp.pcb18
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB18_Pp_CDF_HS.png", plot = p.pp.pcb18,
+       width = 12, height = 6, dpi = 500)
+
+# PCB 20+28
+stats <- ace_pp_temp %>%
+  group_by(location) %>%
+  group_modify(~{
+    fit <- lm(log(PCB20.28) ~ invT, data = .x)
+    s <- summary(fit)
+    tibble(
+      r2 = s$r.squared,
+      pval = s$coefficients[2, 4],
+      slope = s$coefficients[2, 1],
+      label = sprintf("β = %.2f\nR² = %.3f\np = %.2e",
+                      s$coefficients[2, 1],
+                      s$r.squared,
+                      s$coefficients[2, 4]),
+      x = min(.x$invT),
+      y = max(log(.x$PCB20.28), na.rm = TRUE) -
+        0.05 * (max(log(.x$PCB20.28), na.rm = TRUE) - min(log(.x$PCB20.28), na.rm = TRUE))
+    )
+  }) %>%
+  ungroup()
+
+p.pp.pcb20 <- ggplot(ace_pp_temp, aes(x = invT, y = log(PCB20.28))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~location) +
+  geom_text(
+    data = stats,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.1,
+    vjust = 1.1) +
+  coord_cartesian(ylim = c(-37, -29)) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 20+28)") +
-  theme_minimal()
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
+
+# see plot
+p.pp.pcb20
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB2028_Pp_CDF_HS.png", plot = p.pp.pcb20,
+       width = 12, height = 6, dpi = 500)
 
 # PCB 31
-stats <- df2 %>%
+stats <- ace_pp_temp %>%
   group_by(location) %>%
   group_modify(~{
     fit <- lm(log(PCB31) ~ invT, data = .x)
     s <- summary(fit)
-    
     tibble(
       r2 = s$r.squared,
       pval = s$coefficients[2, 4],
@@ -285,7 +277,7 @@ stats <- df2 %>%
   }) %>%
   ungroup()
 
-ggplot(df2, aes(x = invT, y = log(PCB31))) +
+p.pp.pcb31 <- ggplot(ace_pp_temp, aes(x = invT, y = log(PCB31))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~location) +
@@ -297,12 +289,272 @@ ggplot(df2, aes(x = invT, y = log(PCB31))) +
     vjust = 1.1) +
   coord_cartesian(ylim = c(-37, -29)) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 31)") +
-  theme_minimal()
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
+
+# see plot
+p.pp.pcb31
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB31_Pp_CDF_HS.png", plot = p.pp.pcb31,
+       width = 12, height = 6, dpi = 500)
 
 # Transform slope to log10 to comparison purposes
 slope_log10 <- stats$slope / log(10)
 
-# Plot time series
+# Same analyzis but not during any activities
+act.data <- read.csv("Data/RemediationProject/activities_distance.csv")
+
+act.data <- act.data %>%
+  mutate(
+    DateStart = mdy(DateStart),
+    DateEnd   = mdy(DateEnd))
+
+# Need to select observations when no activities were reported
+act_idle <- act.data %>%
+  filter(Activity == "Idle")
+
+act_active <- act.data %>%
+  filter(Activity != "Idle")
+
+idle_data <- ace_pp_temp %>%
+  rowwise() %>%
+  filter(
+    any(date >= act_idle$DateStart & date <= act_idle$DateEnd)
+  ) %>%
+  ungroup()
+
+idle_data <- idle_data %>%
+  rowwise() %>%
+  filter(
+    !any(date >= act_active$DateStart & date <= act_active$DateEnd)
+  ) %>%
+  ungroup()
+
+# Plots
+# PCB8
+stats <- idle_data %>%
+  group_by(location) %>%
+  group_modify(~{
+    fit <- lm(log(PCB8) ~ invT, data = .x)
+    s <- summary(fit)
+    tibble(
+      r2 = s$r.squared,
+      pval = s$coefficients[2, 4],
+      slope = s$coefficients[2, 1],
+      label = sprintf("β = %.2f\nR² = %.3f\np = %.2e",
+                      s$coefficients[2, 1],
+                      s$r.squared,
+                      s$coefficients[2, 4]),
+      x = min(.x$invT),
+      y = max(log(.x$PCB8), na.rm = TRUE) -
+        0.05 * (max(log(.x$PCB8), na.rm = TRUE) - min(log(.x$PCB8), na.rm = TRUE))
+    )
+  }) %>%
+  ungroup()
+
+p.pp.pcb8 <- ggplot(idle_data, aes(x = invT, y = log(PCB8))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~location) +
+  geom_text(
+    data = stats,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.1,
+    vjust = 1.1
+  ) +
+  coord_cartesian(ylim = c(-37, -30)) +
+  labs(x = "1000 / T (1/K)", y = "ln(PCB 8)") +
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
+
+# see plot
+p.pp.pcb8
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB8_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb8,
+       width = 12, height = 6, dpi = 500)
+
+# PCB 15
+stats <- idle_data %>%
+  group_by(location) %>%
+  group_modify(~{
+    fit <- lm(log(PCB15) ~ invT, data = .x)
+    s <- summary(fit)
+    tibble(
+      r2 = s$r.squared,
+      pval = s$coefficients[2, 4],
+      slope = s$coefficients[2, 1],
+      label = sprintf("β = %.2f\nR² = %.3f\np = %.2e",
+                      s$coefficients[2, 1],
+                      s$r.squared,
+                      s$coefficients[2, 4]),
+      x = min(.x$invT),
+      y = max(log(.x$PCB15), na.rm = TRUE) -
+        0.05 * (max(log(.x$PCB15), na.rm = TRUE) - min(log(.x$PCB15), na.rm = TRUE))
+    )
+  }) %>%
+  ungroup()
+
+p.pp.pcb15 <- ggplot(idle_data, aes(x = invT, y = log(PCB15))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~location) +
+  geom_text(
+    data = stats,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.1,
+    vjust = 1.1
+  ) +
+  coord_cartesian(ylim = c(-37, -33)) +
+  labs(x = "1000 / T (1/K)", y = "ln(PCB 15)") +
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
+
+# see plot
+p.pp.pcb15
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB15_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb15,
+       width = 12, height = 6, dpi = 500)
+
+# PCB 18.30
+stats <- idle_data %>%
+  group_by(location) %>%
+  group_modify(~{
+    fit <- lm(log(PCB18.30) ~ invT, data = .x)
+    s <- summary(fit)
+    tibble(
+      r2 = s$r.squared,
+      pval = s$coefficients[2, 4],
+      slope = s$coefficients[2, 1],
+      label = sprintf("β = %.2f\nR² = %.3f\np = %.2e",
+                      s$coefficients[2, 1],
+                      s$r.squared,
+                      s$coefficients[2, 4]),
+      x = min(.x$invT),
+      y = max(log(.x$PCB18.30), na.rm = TRUE) -
+        0.05 * (max(log(.x$PCB18.30), na.rm = TRUE) - min(log(.x$PCB18.30), na.rm = TRUE))
+    )
+  }) %>%
+  ungroup()
+
+p.pp.pcb18 <- ggplot(idle_data, aes(x = invT, y = log(PCB18.30))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~location) +
+  geom_text(
+    data = stats,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.1,
+    vjust = 1.1
+  ) +
+  coord_cartesian(ylim = c(-37, -30)) +
+  labs(x = "1000 / T (1/K)", y = "ln(PCB 18+30)") +
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
+
+# see plot
+p.pp.pcb18
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB18.30_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb18,
+       width = 12, height = 6, dpi = 500)
+
+# PCB 20.28
+stats <- idle_data %>%
+  group_by(location) %>%
+  group_modify(~{
+    fit <- lm(log(PCB20.28) ~ invT, data = .x)
+    s <- summary(fit)
+    tibble(
+      r2 = s$r.squared,
+      pval = s$coefficients[2, 4],
+      slope = s$coefficients[2, 1],
+      label = sprintf("β = %.2f\nR² = %.3f\np = %.2e",
+                      s$coefficients[2, 1],
+                      s$r.squared,
+                      s$coefficients[2, 4]),
+      x = min(.x$invT),
+      y = max(log(.x$PCB20.28), na.rm = TRUE) -
+        0.05 * (max(log(.x$PCB20.28), na.rm = TRUE) - min(log(.x$PCB20.28), na.rm = TRUE))
+    )
+  }) %>%
+  ungroup()
+
+p.pp.pcb20 <- ggplot(idle_data, aes(x = invT, y = log(PCB20.28))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~location) +
+  geom_text(
+    data = stats,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.1,
+    vjust = 1.1
+  ) +
+  coord_cartesian(ylim = c(-37, -31.5)) +
+  labs(x = "1000 / T (1/K)", y = "ln(PCB 20+28)") +
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
+
+# see plot
+p.pp.pcb20
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB20.28_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb20,
+       width = 12, height = 6, dpi = 500)
+
+# PCB 31
+stats <- idle_data %>%
+  group_by(location) %>%
+  group_modify(~{
+    fit <- lm(log(PCB31) ~ invT, data = .x)
+    s <- summary(fit)
+    tibble(
+      r2 = s$r.squared,
+      pval = s$coefficients[2, 4],
+      slope = s$coefficients[2, 1],
+      label = sprintf("β = %.2f\nR² = %.3f\np = %.2e",
+                      s$coefficients[2, 1],
+                      s$r.squared,
+                      s$coefficients[2, 4]),
+      x = min(.x$invT),
+      y = max(log(.x$PCB31), na.rm = TRUE) -
+        0.05 * (max(log(.x$PCB31), na.rm = TRUE) - min(log(.x$PCB31), na.rm = TRUE))
+    )
+  }) %>%
+  ungroup()
+
+p.pp.pcb31 <- ggplot(idle_data, aes(x = invT, y = log(PCB31))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~location) +
+  geom_text(
+    data = stats,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.1,
+    vjust = 1.1
+  ) +
+  coord_cartesian(ylim = c(-37, -31.5)) +
+  labs(x = "1000 / T (1/K)", y = "ln(PCB 31)") +
+  theme_minimal() +
+  theme(panel.spacing = unit(2, "lines"))
+
+# see plot
+p.pp.pcb31
+
+# save plot
+ggsave("Output/Plots/PartialPressure/AcePCB31_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb31,
+       width = 12, height = 6, dpi = 500)
+
+
+
+
 
 
 
