@@ -11,6 +11,7 @@ dir.create("R/Extra/AirChicagoData")
 dir.create("R/Extra/Flux")
 dir.create("R/Extra/Soil")
 dir.create("R/Extra/SoilAirExchange")
+dir.create("R/ParPreCalculations")
 
 dir.create("Data")
 dir.create("Data/Air")
