@@ -7,8 +7,11 @@
 # Install packages
 {
   install.packages("dplyr")
-  install.packages("ggplot")
+  install.packages("scales")
+  install.packages("tidyr")
+  install.packages("ggplot2")
   install.packages("ggnewscale")
+  install.packages("lubridate")
 }
 
 # Library
@@ -18,14 +21,13 @@
   library(ggplot2)
   library(tidyr)
   library(ggnewscale)
+  library(lubridate)
 }
 
 # Read data ---------------------------------------------------------------
 ace <- read.csv("Data/Air/EastChicago/ACE/ACEData.csv")
 
 # ACE Data ----------------------------------------------------------------
-# Remove blanks cells (0s)
-ace <- subset(ace, !grepl("0", location))
 # Change units to pg/m3 from ng/m3
 ace <- ace %>%
   mutate(across(starts_with("PCB") & !ends_with("_unc"), ~ . / 1000))
@@ -375,8 +377,14 @@ p.pcb8 <- ggplot(subset(ace, location2 == "South"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) + 
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 8 concentration @ CDF (ng/m3)") +
@@ -419,8 +427,14 @@ p.pcb15 <- ggplot(subset(ace, location2 == "South"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 15 concentration @ CDF (ng/m3)") +
@@ -463,8 +477,14 @@ p.pcb18 <- ggplot(subset(ace, location2 == "South"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 18+30 concentration @ CDF (ng/m3)") +
@@ -507,8 +527,14 @@ p.pcb20 <- ggplot(subset(ace, location2 == "South"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 20+28 concentration @ CDF (ng/m3)") +
@@ -551,8 +577,14 @@ p.pcb31 <- ggplot(subset(ace, location2 == "South"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 31 concentration @ CDF (ng/m3)") +
@@ -595,8 +627,14 @@ p.pcb8 <- ggplot(subset(ace, location2 == "HS"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 8 concentration @ HS (ng/m3)") +
@@ -638,8 +676,14 @@ p.pcb15 <- ggplot(subset(ace, location2 == "HS"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 15 concentration @ HS (ng/m3)") +
@@ -681,8 +725,14 @@ p.pcb18 <- ggplot(subset(ace, location2 == "HS"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 18+30 concentration @ HS (ng/m3)") +
@@ -724,8 +774,14 @@ p.pcb20 <- ggplot(subset(ace, location2 == "HS"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 20+28 concentration @ HS (ng/m3)") +
@@ -767,8 +823,14 @@ p.pcb31 <- ggplot(subset(ace, location2 == "HS"),
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
     color = "black", size = 2.5, stroke = 0.75
   ) +
-  scale_shape_manual(values = c("≤ DL" = 22, "> DL" = 21)) +
-  scale_fill_manual(values = c("≤ DL" = NA, "> DL" = "#E69F00")) +
+  scale_shape_manual(
+    values = c("≤ DL" = 22, "> DL" = 21),
+    na.translate = FALSE
+  ) +
+  scale_fill_manual(
+    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
+    na.translate = FALSE
+  ) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 31 concentration @ HS (ng/m3)") +

@@ -22,8 +22,6 @@
 ace <- read.csv("Data/Air/EastChicago/ACE/ACEData.csv")
 
 # ACE Data ----------------------------------------------------------------
-# Remove blanks cells (0s)
-ace <- subset(ace, !grepl("0", location))
 # Change units to pg/m3 from ng/m3
 ace <- ace %>%
   mutate(across(starts_with("PCB") & !ends_with("_unc"), ~ . / 1000))
@@ -101,7 +99,6 @@ stats <- ace_pp_temp %>%
   group_modify(~{
     fit <- lm(log(PCB8) ~ invT, data = .x %>% filter(!is.na(PCB8)))
     s <- summary(fit)
-    sd_resid <- sd(resid(fit), na.rm = TRUE)
     tibble(
       r2 = s$r.squared,
       pval = s$coefficients[2, 4],
@@ -109,7 +106,6 @@ stats <- ace_pp_temp %>%
       label = sprintf("β = %.2f\nR² = %.3f\np = %.2e",
                       s$coefficients[2, 1],
                       s$r.squared,
-                      sd_resid,
                       s$coefficients[2, 4]),
       x = min(.x$invT),
       y = max(log(.x$PCB8), na.rm = TRUE) -
@@ -681,7 +677,7 @@ p.pp.pcb15 <- ggplot(active_data, aes(x = invT, y = log(PCB15))) +
     hjust = -0.1,
     vjust = 1.1
   ) +
-  coord_cartesian(ylim = c(-37, -31)) +
+  coord_cartesian(ylim = c(-37.5, -31)) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 15)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
@@ -847,7 +843,7 @@ ace_pp_288 <- ace_pp_temp %>%
   )
 
 # Plots
-ggplot(ace_pp_288, aes(x = date, y = log(PCB31_288))) +
+ggplot(ace_pp_288, aes(x = date, y = log(PCB15_288))) +
   geom_point() +
   facet_wrap(~location) +
   labs(x = "date", y = "ln PCB 8 @ 288 K (atm)")
