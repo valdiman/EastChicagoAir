@@ -22,6 +22,7 @@
   library(tidyr)
   library(ggnewscale)
   library(lubridate)
+  library(purrr)
 }
 
 # Read data ---------------------------------------------------------------
@@ -38,11 +39,11 @@ ace <- ace %>%
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
 ace <- ace %>%
   mutate(
-    PCB8_unc_label = factor(PCB8_unc, labels = c("≤ DL", "> DL")),
-    PCB15_unc_label = factor(PCB15_unc, labels = c("≤ DL", "> DL")),
-    PCB18.30_unc_label = factor(PCB18.30_unc, labels = c("≤ DL", "> DL")),
-    PCB20.28_unc_label = factor(PCB20.28_unc, labels = c("≤ DL", "> DL")),
-    PCB31_unc_label = factor(PCB31_unc, labels = c("≤ DL", "> DL"))
+    PCB8_unc_label = factor(PCB8_unc, labels = c("< DL", "≥ DL")),
+    PCB15_unc_label = factor(PCB15_unc, labels = c("< DL", "≥ DL")),
+    PCB18.30_unc_label = factor(PCB18.30_unc, labels = c("< DL", "≥ DL")),
+    PCB20.28_unc_label = factor(PCB20.28_unc, labels = c("< DL", "≥ DL")),
+    PCB31_unc_label = factor(PCB31_unc, labels = c("< DL", "≥ DL"))
   )
 
 # Both sites --------------------------------------------------------------
@@ -53,97 +54,81 @@ ace$location2 <- factor(ace$location2)
 # Read activity data ------------------------------------------------------
 act.data <- read.csv("Data/RemediationProject/activities_distance.csv")
 
-# Convert dates, standardize activity labels, and keep unique intervals
-act_periods <- act.data %>%
+# Clean activity data
+activities_clean <- act.data %>%
   mutate(
-    start = mdy(DateStart),
-    end   = mdy(DateEnd),
-    Activity = case_when(
-      grepl("dredg", Activity, ignore.case = TRUE) ~ "Dredging",
-      grepl("construct", Activity, ignore.case = TRUE) ~ "Construction",
-      TRUE ~ Activity
-    )
+    DateStart = as.Date(DateStart, "%m/%d/%Y"),
+    DateEnd   = as.Date(DateEnd, "%m/%d/%Y")
   ) %>%
-  distinct(Activity, start, end) %>%
-  arrange(Activity, start, end)
+  distinct(DateStart, DateEnd, Activity)
 
-# Merge overlapping or touching intervals within each Activity
-act_periods_clean <- act_periods %>%
-  mutate(
-    start_num = as.integer(start),
-    end_num   = as.integer(end)
-  ) %>%
-  arrange(Activity, start_num, end_num) %>%
-  group_by(Activity) %>%
-  mutate(
-    grp = 1 + cumsum(start_num > (lag(cummax(end_num), default = first(end_num)) + 1))
-  ) %>%
-  group_by(Activity, grp) %>%
-  summarise(
-    start = as.Date(min(start_num), origin = "1970-01-01"),
-    end   = as.Date(max(end_num), origin = "1970-01-01"),
-    .groups = "drop"
-  ) %>%
-  select(Activity, start, end)
-
-# OPTIONAL: create idle periods between activity intervals
-idle_periods <- act_periods_clean %>%
-  arrange(start) %>%
-  mutate(next_start = lead(start)) %>%
-  filter(!is.na(next_start), next_start > end + days(1)) %>%
-  transmute(
-    xmin = end + days(1),
-    xmax = next_start - days(1),
-    Activity = "Idle"
-  )
-
-# Combine active + idle periods for plotting
-band_df <- bind_rows(
-  act_periods_clean %>% transmute(xmin = start, xmax = end, Activity),
-  idle_periods
+# Create full daily timeline
+all_dates <- data.frame(
+  Date = seq(min(activities_clean$DateStart),
+             max(activities_clean$DateEnd),
+             by = "day")
 )
 
-# PCB 8 plot
+# Assign activity (priority: Idle > Dredging > Construction)
+get_activity <- function(d, df) {
+  if (any(df$Activity == "Idle" & d >= df$DateStart & d <= df$DateEnd)) {
+    "Idle"
+  } else if (any(df$Activity == "Dredging" & d >= df$DateStart & d <= df$DateEnd)) {
+    "Dredging"
+  } else if (any(df$Activity == "Construction" & d >= df$DateStart & d <= df$DateEnd)) {
+    "Construction"
+  } else {
+    "Idle"  # default
+  }
+}
+
+activity_daily <- all_dates %>%
+  mutate(Activity = map_chr(Date, get_activity, df = activities_clean))
+
+# Plot
+# PCB 8
 p.pcb8 <- ggplot(ace, aes(x = date, y = PCB8)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
+  
+  # background activity bands (daily tiles)
+  geom_tile(
+    data = activity_daily,
+    aes(x = Date, y = 0, fill = Activity),
+    height = Inf,
     inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
+    alpha = 0.3
   ) +
+  # PCB data
+  geom_point(aes(color = location2, shape = PCB8_unc_label), size = 2) +
+  # scales
   scale_fill_manual(
     name = "Project phase",
     values = c(
-      "Idle" = "white",
+      "Idle" = "grey90",
       "Construction" = "lightgreen",
       "Dredging" = "#F4A6B7"
     )
   ) +
-  geom_point(aes(color = location2, shape = PCB8_unc_label), size = 2) +
   scale_color_manual(
     name = "Location",
     values = c("South" = "#00BFC4", "HS" = "#E69F00")
   ) +
   scale_shape_manual(
     name = "Detection",
-    values = c("≤ DL" = 19, "> DL" = 1)
+    values = c("< DL" = 19, "≥ DL" = 1),
+    na.translate = FALSE
   ) +
+  
+  # formatting
   theme_bw() +
   labs(x = "", y = "PCB 8 concentration (ng/m3)") +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  
   theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
+    axis.text.x = element_text(angle = 60, hjust = 1, size = 7, face = "bold"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    axis.title.y = element_text(size = 11, face = "bold"),
     legend.position = "right",
     legend.key = element_blank()
-  ) +
-  guides(
-    fill = guide_legend(override.aes = list(alpha = 0.3)),
-    color = guide_legend(override.aes = list(shape = 16)),
-    shape = guide_legend(override.aes = list(color = "black"))
   )
 
 p.pcb8
@@ -154,45 +139,47 @@ ggsave("Output/Plots/Concentrations/AcePCB8_CDF_HS.png", plot = p.pcb8, width = 
 
 # PCB 15
 p.pcb15 <- ggplot(ace, aes(x = date, y = PCB15)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
+  
+  # background activity bands (daily tiles)
+  geom_tile(
+    data = activity_daily,
+    aes(x = Date, y = 0, fill = Activity),
+    height = Inf,
     inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
+    alpha = 0.3
   ) +
+  # PCB data
+  geom_point(aes(color = location2, shape = PCB8_unc_label), size = 2) +
+  # scales
   scale_fill_manual(
     name = "Project phase",
     values = c(
-      "Idle" = "white",
+      "Idle" = "grey90",
       "Construction" = "lightgreen",
       "Dredging" = "#F4A6B7"
     )
   ) +
-  geom_point(aes(color = location2, shape = PCB8_unc_label), size = 2) +
   scale_color_manual(
     name = "Location",
     values = c("South" = "#00BFC4", "HS" = "#E69F00")
   ) +
   scale_shape_manual(
     name = "Detection",
-    values = c("≤ DL" = 19, "> DL" = 1)
+    values = c("< DL" = 19, "≥ DL" = 1),
+    na.translate = FALSE
   ) +
+  
+  # formatting
   theme_bw() +
   labs(x = "", y = "PCB 15 concentration (ng/m3)") +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
+  
   theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
+    axis.text.x = element_text(angle = 60, hjust = 1, size = 7, face = "bold"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    axis.title.y = element_text(size = 11, face = "bold"),
     legend.position = "right",
     legend.key = element_blank()
-  ) +
-  guides(
-    fill = guide_legend(override.aes = list(alpha = 0.3)),
-    color = guide_legend(override.aes = list(shape = 16)),
-    shape = guide_legend(override.aes = list(color = "black"))
   )
 
 # See plot
