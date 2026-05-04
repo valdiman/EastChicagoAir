@@ -313,66 +313,20 @@ slope_log10 <- stats$slope / log(10)
 
 # Temperature analysis - No activity  -------------------------------------
 # Same analyze but not during any activities
-act.data <- read.csv("Data/RemediationProject/activities_distance.csv")
+activity_daily <- read.csv("Data/RemediationProject/activity_daily.csv")
+activity_daily$Date <- as.Date(activity_daily$Date, origin = "1899-12-30")
 
-act.data <- act.data %>%
-  mutate(
-    DateStart = mdy(DateStart),
-    DateEnd   = mdy(DateEnd))
+ace_pp_temp <- ace_pp_temp %>%
+  left_join(activity_daily, by = c("date" = "Date"))
 
-act_idle_explicit <- act.data %>%
-  filter(Activity == "Idle") %>%
-  select(idle_start = DateStart, idle_end = DateEnd)
-
-act_active <- act.data %>%
-  filter(Activity != "Idle") %>%
-  arrange(DateStart)
-
-act_idle_gaps <- act_active %>%
-  mutate(
-    next_start = lead(DateStart),
-    idle_start = DateEnd,
-    idle_end   = next_start
-  ) %>%
-  filter(!is.na(idle_end)) %>%
-  mutate(
-    idle_start = idle_start + 1,
-    idle_end   = idle_end - 1
-  ) %>%
-  filter(idle_start <= idle_end) %>%
-  select(idle_start, idle_end)
-
-act_idle_all <- bind_rows(act_idle_explicit, act_idle_gaps) %>%
-  arrange(idle_start)
-
-act_idle_all <- act_idle_all %>%
-  arrange(idle_start) %>%
-  mutate(
-    idle_start_num = as.numeric(idle_start),
-    idle_end_num   = as.numeric(idle_end),
-    grp = cumsum(
-      idle_start_num >
-        lag(cummax(idle_end_num), default = first(idle_end_num))
-    )
-  ) %>%
-  group_by(grp) %>%
-  summarise(
-    idle_start = as.Date(min(idle_start_num), origin = "1970-01-01"),
-    idle_end   = as.Date(max(idle_end_num),   origin = "1970-01-01"),
-    .groups = "drop"
-  )
-
-idle_data <- ace_pp_temp %>%
-  rowwise() %>%
-  filter(
-    any(date >= act_idle_all$idle_start &
-          date <= act_idle_all$idle_end)
-  ) %>%
-  ungroup()
+ace_pp_temp$location <- factor(
+  ace_pp_temp$location,
+  levels = c("South", "HS"))
 
 # Plots
 # PCB8
-stats <- idle_data %>%
+stats <- ace_pp_temp %>%
+  filter(Activity == "Idle") %>%
   group_by(location) %>%
   group_modify(~{
     fit <- lm(log(PCB8) ~ invT, data = .x)
@@ -385,14 +339,14 @@ stats <- idle_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB8), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB8), na.rm = TRUE) - min(log(.x$PCB8), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB8), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb8 <- ggplot(idle_data, aes(x = invT, y = log(PCB8))) +
+p.pp.pcb8 <- ggplot(subset(ace_pp_temp, Activity == "Idle"),
+  aes(x = invT, y = log(PCB8))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~location) +
@@ -401,8 +355,7 @@ p.pp.pcb8 <- ggplot(idle_data, aes(x = invT, y = log(PCB8))) +
     aes(x = -Inf, y = Inf, label = label),
     inherit.aes = FALSE,
     hjust = -0.1,
-    vjust = 1.1
-  ) +
+    vjust = 1.2) +
   coord_cartesian(ylim = c(-37, -30)) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 8)") +
   theme_minimal() +
@@ -416,7 +369,8 @@ ggsave("Output/Plots/PartialPressure/AcePCB8_Pp_CDF_HS_NoActivities.png", plot =
        width = 12, height = 6, dpi = 500)
 
 # PCB 15
-stats <- idle_data %>%
+stats <- ace_pp_temp %>%
+  filter(Activity == "Idle") %>%
   group_by(location) %>%
   group_modify(~{
     fit <- lm(log(PCB15) ~ invT, data = .x)
@@ -429,14 +383,14 @@ stats <- idle_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB15), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB15), na.rm = TRUE) - min(log(.x$PCB15), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB15), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb15 <- ggplot(idle_data, aes(x = invT, y = log(PCB15))) +
+p.pp.pcb15 <- ggplot(subset(ace_pp_temp, Activity == "Idle"),
+                     aes(x = invT, y = log(PCB15))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~location) +
@@ -445,9 +399,8 @@ p.pp.pcb15 <- ggplot(idle_data, aes(x = invT, y = log(PCB15))) +
     aes(x = -Inf, y = Inf, label = label),
     inherit.aes = FALSE,
     hjust = -0.1,
-    vjust = 1.1
-  ) +
-  coord_cartesian(ylim = c(-37, -32)) +
+    vjust = 1.2) +
+  coord_cartesian(ylim = c(-37, -31)) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 15)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
@@ -460,7 +413,8 @@ ggsave("Output/Plots/PartialPressure/AcePCB15_Pp_CDF_HS_NoActivities.png", plot 
        width = 12, height = 6, dpi = 500)
 
 # PCB 18.30
-stats <- idle_data %>%
+stats <- ace_pp_temp %>%
+  filter(Activity == "Idle") %>%
   group_by(location) %>%
   group_modify(~{
     fit <- lm(log(PCB18.30) ~ invT, data = .x)
@@ -473,14 +427,14 @@ stats <- idle_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB18.30), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB18.30), na.rm = TRUE) - min(log(.x$PCB18.30), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB18.30), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb18 <- ggplot(idle_data, aes(x = invT, y = log(PCB18.30))) +
+p.pp.pcb18 <- ggplot(subset(ace_pp_temp, Activity == "Idle"),
+                     aes(x = invT, y = log(PCB18.30))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~location) +
@@ -489,9 +443,8 @@ p.pp.pcb18 <- ggplot(idle_data, aes(x = invT, y = log(PCB18.30))) +
     aes(x = -Inf, y = Inf, label = label),
     inherit.aes = FALSE,
     hjust = -0.1,
-    vjust = 1.1
-  ) +
-  coord_cartesian(ylim = c(-37, -30)) +
+    vjust = 1.2) +
+  coord_cartesian(ylim = c(-37, -29)) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 18+30)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
@@ -504,7 +457,8 @@ ggsave("Output/Plots/PartialPressure/AcePCB18.30_Pp_CDF_HS_NoActivities.png", pl
        width = 12, height = 6, dpi = 500)
 
 # PCB 20.28
-stats <- idle_data %>%
+stats <- ace_pp_temp %>%
+  filter(Activity == "Idle") %>%
   group_by(location) %>%
   group_modify(~{
     fit <- lm(log(PCB20.28) ~ invT, data = .x)
@@ -517,14 +471,14 @@ stats <- idle_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB20.28), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB20.28), na.rm = TRUE) - min(log(.x$PCB20.28), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB20.28), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb20 <- ggplot(idle_data, aes(x = invT, y = log(PCB20.28))) +
+p.pp.pcb20 <- ggplot(subset(ace_pp_temp, Activity == "Idle"),
+                     aes(x = invT, y = log(PCB20.28))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~location) +
@@ -533,9 +487,8 @@ p.pp.pcb20 <- ggplot(idle_data, aes(x = invT, y = log(PCB20.28))) +
     aes(x = -Inf, y = Inf, label = label),
     inherit.aes = FALSE,
     hjust = -0.1,
-    vjust = 1.1
-  ) +
-  coord_cartesian(ylim = c(-37, -30)) +
+    vjust = 1.2) +
+  coord_cartesian(ylim = c(-37, -29)) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 20+28)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
@@ -548,7 +501,8 @@ ggsave("Output/Plots/PartialPressure/AcePCB20.28_Pp_CDF_HS_NoActivities.png", pl
        width = 12, height = 6, dpi = 500)
 
 # PCB 31
-stats <- idle_data %>%
+stats <- ace_pp_temp %>%
+  filter(Activity == "Idle") %>%
   group_by(location) %>%
   group_modify(~{
     fit <- lm(log(PCB31) ~ invT, data = .x)
@@ -561,14 +515,14 @@ stats <- idle_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB31), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB31), na.rm = TRUE) - min(log(.x$PCB31), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB31), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb31 <- ggplot(idle_data, aes(x = invT, y = log(PCB31))) +
+p.pp.pcb31 <- ggplot(subset(ace_pp_temp, Activity == "Idle"),
+                     aes(x = invT, y = log(PCB31))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~location) +
@@ -577,9 +531,8 @@ p.pp.pcb31 <- ggplot(idle_data, aes(x = invT, y = log(PCB31))) +
     aes(x = -Inf, y = Inf, label = label),
     inherit.aes = FALSE,
     hjust = -0.1,
-    vjust = 1.1
-  ) +
-  coord_cartesian(ylim = c(-37, -30)) +
+    vjust = 1.2) +
+  coord_cartesian(ylim = c(-37, -29)) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 31)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
@@ -591,19 +544,13 @@ p.pp.pcb31
 ggsave("Output/Plots/PartialPressure/AcePCB31_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb31,
        width = 12, height = 6, dpi = 500)
 
-# Active time
-active_data <- ace_pp_temp %>%
-  rowwise() %>%
-  filter(
-    !any(date >= act_idle_all$idle_start &
-           date <= act_idle_all$idle_end)
-  ) %>%
-  ungroup()
+# Activities
 
 # Plots
 # PCB8
-stats <- active_data %>%
-  group_by(location) %>%
+stats <- ace_pp_temp %>%
+  filter(Activity %in% c("Construction", "Dredging")) %>%
+  group_by(location, Activity) %>%
   group_modify(~{
     fit <- lm(log(PCB8) ~ invT, data = .x)
     s <- summary(fit)
@@ -615,25 +562,21 @@ stats <- active_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB8), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB8), na.rm = TRUE) - min(log(.x$PCB8), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB8), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb8 <- ggplot(active_data, aes(x = invT, y = log(PCB8))) +
+p.pp.pcb8 <- ggplot(
+  subset(ace_pp_temp, Activity %in% c("Construction", "Dredging")),
+  aes(x = invT, y = log(PCB8))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~location) +
-  geom_text(
-    data = stats,
-    aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE,
-    hjust = -0.1,
-    vjust = 1.1
-  ) +
-  coord_cartesian(ylim = c(-37, -30)) +
+  facet_grid(Activity ~ location) +
+  geom_text(data = stats, aes(x = -Inf, y = Inf, label = label),
+            inherit.aes = FALSE, hjust = -0.1, vjust = 1.2) +
+  ylim(-37, -28) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 8)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
@@ -646,8 +589,9 @@ ggsave("Output/Plots/PartialPressure/AcePCB8_Pp_CDF_HS_Activities.png", plot = p
        width = 12, height = 6, dpi = 500)
 
 # PCB 15
-stats <- active_data %>%
-  group_by(location) %>%
+stats <- ace_pp_temp %>%
+  filter(Activity %in% c("Construction", "Dredging")) %>%
+  group_by(location, Activity) %>%
   group_modify(~{
     fit <- lm(log(PCB15) ~ invT, data = .x)
     s <- summary(fit)
@@ -659,25 +603,21 @@ stats <- active_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB15), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB15), na.rm = TRUE) - min(log(.x$PCB15), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB15), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb15 <- ggplot(active_data, aes(x = invT, y = log(PCB15))) +
+p.pp.pcb15 <- ggplot(
+  subset(ace_pp_temp, Activity %in% c("Construction", "Dredging")),
+  aes(x = invT, y = log(PCB15))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~location) +
-  geom_text(
-    data = stats,
-    aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE,
-    hjust = -0.1,
-    vjust = 1.1
-  ) +
-  coord_cartesian(ylim = c(-37.5, -31)) +
+  facet_grid(Activity ~ location) +
+  geom_text(data = stats, aes(x = -Inf, y = Inf, label = label),
+            inherit.aes = FALSE, hjust = -0.1, vjust = 1.2) +
+  ylim(-37, -28) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 15)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
@@ -690,8 +630,9 @@ ggsave("Output/Plots/PartialPressure/AcePCB15_Pp_CDF_HS_Activities.png", plot = 
        width = 12, height = 6, dpi = 500)
 
 # PCB 18.30
-stats <- active_data %>%
-  group_by(location) %>%
+stats <- ace_pp_temp %>%
+  filter(Activity %in% c("Construction", "Dredging")) %>%
+  group_by(location, Activity) %>%
   group_modify(~{
     fit <- lm(log(PCB18.30) ~ invT, data = .x)
     s <- summary(fit)
@@ -703,25 +644,21 @@ stats <- active_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB18.30), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB18.30), na.rm = TRUE) - min(log(.x$PCB18.30), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB18.30), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb18 <- ggplot(active_data, aes(x = invT, y = log(PCB18.30))) +
+p.pp.pcb18 <- ggplot(
+  subset(ace_pp_temp, Activity %in% c("Construction", "Dredging")),
+  aes(x = invT, y = log(PCB18.30))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~location) +
-  geom_text(
-    data = stats,
-    aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE,
-    hjust = -0.1,
-    vjust = 1.1
-  ) +
-  coord_cartesian(ylim = c(-37, -29)) +
+  facet_grid(Activity ~ location) +
+  geom_text(data = stats, aes(x = -Inf, y = Inf, label = label),
+            inherit.aes = FALSE, hjust = -0.1, vjust = 1.2) +
+  ylim(-37, -28) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 18+30)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
@@ -734,8 +671,9 @@ ggsave("Output/Plots/PartialPressure/AcePCB18.30_Pp_CDF_HS_Activities.png", plot
        width = 12, height = 6, dpi = 500)
 
 # PCB 20.28
-stats <- active_data %>%
-  group_by(location) %>%
+stats <- ace_pp_temp %>%
+  filter(Activity %in% c("Construction", "Dredging")) %>%
+  group_by(location, Activity) %>%
   group_modify(~{
     fit <- lm(log(PCB20.28) ~ invT, data = .x)
     s <- summary(fit)
@@ -747,25 +685,21 @@ stats <- active_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB20.28), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB20.28), na.rm = TRUE) - min(log(.x$PCB20.28), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB20.28), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb20 <- ggplot(active_data, aes(x = invT, y = log(PCB20.28))) +
+p.pp.pcb20 <- ggplot(
+  subset(ace_pp_temp, Activity %in% c("Construction", "Dredging")),
+  aes(x = invT, y = log(PCB20.28))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~location) +
-  geom_text(
-    data = stats,
-    aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE,
-    hjust = -0.1,
-    vjust = 1.1
-  ) +
-  coord_cartesian(ylim = c(-37, -29)) +
+  facet_grid(Activity ~ location) +
+  geom_text(data = stats, aes(x = -Inf, y = Inf, label = label),
+            inherit.aes = FALSE, hjust = -0.1, vjust = 1.2) +
+  ylim(-37, -28) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 20+28)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
@@ -778,8 +712,9 @@ ggsave("Output/Plots/PartialPressure/AcePCB20.28_Pp_CDF_HS_Activities.png", plot
        width = 12, height = 6, dpi = 500)
 
 # PCB 31
-stats <- active_data %>%
-  group_by(location) %>%
+stats <- ace_pp_temp %>%
+  filter(Activity %in% c("Construction", "Dredging")) %>%
+  group_by(location, Activity) %>%
   group_modify(~{
     fit <- lm(log(PCB31) ~ invT, data = .x)
     s <- summary(fit)
@@ -791,25 +726,21 @@ stats <- active_data %>%
                       s$coefficients[2, 1],
                       s$r.squared,
                       s$coefficients[2, 4]),
-      x = min(.x$invT),
-      y = max(log(.x$PCB31), na.rm = TRUE) -
-        0.05 * (max(log(.x$PCB31), na.rm = TRUE) - min(log(.x$PCB31), na.rm = TRUE))
+      x = min(.x$invT, na.rm = TRUE),
+      y = max(log(.x$PCB31), na.rm = TRUE)
     )
   }) %>%
   ungroup()
 
-p.pp.pcb31 <- ggplot(active_data, aes(x = invT, y = log(PCB31))) +
+p.pp.pcb31 <- ggplot(
+  subset(ace_pp_temp, Activity %in% c("Construction", "Dredging")),
+  aes(x = invT, y = log(PCB31))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~location) +
-  geom_text(
-    data = stats,
-    aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE,
-    hjust = -0.1,
-    vjust = 1.1
-  ) +
-  coord_cartesian(ylim = c(-37, -29)) +
+  facet_grid(Activity ~ location) +
+  geom_text(data = stats, aes(x = -Inf, y = Inf, label = label),
+            inherit.aes = FALSE, hjust = -0.1, vjust = 1.2) +
+  ylim(-37, -28) +
   labs(x = "1000 / T (1/K)", y = "ln(PCB 31)") +
   theme_minimal() +
   theme(panel.spacing = unit(2, "lines"))
