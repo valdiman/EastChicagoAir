@@ -85,6 +85,10 @@ get_activity <- function(d, df) {
 activity_daily <- all_dates %>%
   mutate(Activity = map_chr(Date, get_activity, df = activities_clean))
 
+# Export data
+write.csv(activity_daily, "Data/RemediationProject/activity_daily.csv",
+          row.names = FALSE)
+
 # Plot
 # PCB 8
 p.pcb8 <- ggplot(ace, aes(x = date, y = PCB8)) +
@@ -124,7 +128,7 @@ p.pcb15 <- ggplot(ace, aes(x = date, y = PCB15)) +
   geom_tile(data = activity_daily,
             aes(x = Date, y = 0, fill = Activity),
             height = Inf, inherit.aes = FALSE, alpha = 0.3) +
-  geom_point(aes(color = location2, shape = PCB8_unc_label),
+  geom_point(aes(color = location2, shape = PCB15_unc_label),
              size = 2) +
   scale_fill_manual(name = "Project phase",
                     values = c("Idle" = "grey90",
@@ -158,7 +162,7 @@ p.pcb18 <- ggplot(ace, aes(x = date, y = PCB18.30)) +
   geom_tile(data = activity_daily,
             aes(x = Date, y = 0, fill = Activity),
             height = Inf, inherit.aes = FALSE, alpha = 0.3) +
-  geom_point(aes(color = location2, shape = PCB8_unc_label),
+  geom_point(aes(color = location2, shape = PCB18.30_unc_label),
              size = 2) +
   scale_fill_manual(name = "Project phase",
                     values = c("Idle" = "grey90",
@@ -192,7 +196,7 @@ p.pcb20 <- ggplot(ace, aes(x = date, y = PCB20.28)) +
   geom_tile(data = activity_daily,
             aes(x = Date, y = 0, fill = Activity),
             height = Inf, inherit.aes = FALSE, alpha = 0.3) +
-  geom_point(aes(color = location2, shape = PCB8_unc_label),
+  geom_point(aes(color = location2, shape = PCB20.28_unc_label),
              size = 2) +
   scale_fill_manual(name = "Project phase",
                     values = c("Idle" = "grey90",
@@ -226,7 +230,7 @@ p.pcb31 <- ggplot(ace, aes(x = date, y = PCB31)) +
   geom_tile(data = activity_daily,
             aes(x = Date, y = 0, fill = Activity),
             height = Inf, inherit.aes = FALSE, alpha = 0.3) +
-  geom_point(aes(color = location2, shape = PCB8_unc_label),
+  geom_point(aes(color = location2, shape = PCB31_unc_label),
              size = 2) +
   scale_fill_manual(name = "Project phase",
                     values = c("Idle" = "grey90",
@@ -260,48 +264,33 @@ ggsave("Output/Plots/Concentrations/AcePCB31_CDF_HS.png", plot = p.pcb31,
 #PCB 8
 p.pcb8 <- ggplot(subset(ace, location2 == "South"),
                  aes(x = date, y = PCB8)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) + 
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 8 concentration @ CDF (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
     axis.text.y = element_text(face = "bold", size = 10),
     axis.title.y = element_text(face = "bold", size = 11),
     legend.position = "right",
-    legend.key = element_blank()
-  )
+    legend.key = element_blank())
 
 # See plot
-p.pcb8
+p.pcb8  
 
 # Export plot
 ggsave("Output/Plots/Concentrations/AcePCB8_CDF.png", plot = p.pcb8, width = 12,
@@ -309,46 +298,31 @@ ggsave("Output/Plots/Concentrations/AcePCB8_CDF.png", plot = p.pcb8, width = 12,
 
 # PCB 15
 p.pcb15 <- ggplot(subset(ace, location2 == "South"),
-                            aes(x = date, y = PCB15)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+                  aes(x = date, y = PCB15)) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
-    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) +
+    aes(shape = PCB15_unc_label, fill = PCB15_unc_label),
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 15 concentration @ CDF (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
-    legend.position = "right",
-    legend.key = element_blank()
-  )
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11),
+        legend.position = "right",
+        legend.key = element_blank())
 
 # See plot
 p.pcb15
@@ -360,45 +334,30 @@ ggsave("Output/Plots/Concentrations/AcePCB15_CDF.png", plot = p.pcb15, width = 1
 # PCB 18+30
 p.pcb18 <- ggplot(subset(ace, location2 == "South"),
                   aes(x = date, y = PCB18.30)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
-    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) +
+    aes(shape = PCB18.30_unc_label, fill = PCB18.30_unc_label),
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 18+30 concentration @ CDF (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
-    legend.position = "right",
-    legend.key = element_blank()
-  )
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11),
+        legend.position = "right",
+        legend.key = element_blank())
 
 # See plot
 p.pcb18
@@ -410,45 +369,30 @@ ggsave("Output/Plots/Concentrations/AcePCB18_CDF.png", plot = p.pcb18, width = 1
 # PCB 20+28
 p.pcb20 <- ggplot(subset(ace, location2 == "South"),
                   aes(x = date, y = PCB20.28)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
-    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) +
+    aes(shape = PCB20.28_unc_label, fill = PCB20.28_unc_label),
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 20+28 concentration @ CDF (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
-    legend.position = "right",
-    legend.key = element_blank()
-  )
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11),
+        legend.position = "right",
+        legend.key = element_blank())
 
 # See plot
 p.pcb20
@@ -460,45 +404,30 @@ ggsave("Output/Plots/Concentrations/AcePCB20_CDF.png", plot = p.pcb20, width = 1
 # PCB 31
 p.pcb31 <- ggplot(subset(ace, location2 == "South"),
                   aes(x = date, y = PCB31)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
-    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) +
+    aes(shape = PCB31_unc_label, fill = PCB31_unc_label),
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 31 concentration @ CDF (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
-    legend.position = "right",
-    legend.key = element_blank()
-  )
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11),
+        legend.position = "right",
+        legend.key = element_blank())
 
 # See plot
 p.pcb31
@@ -510,45 +439,30 @@ ggsave("Output/Plots/Concentrations/AcePCB31_CDF.png", plot = p.pcb31, width = 1
 # HS
 p.pcb8 <- ggplot(subset(ace, location2 == "HS"),
                  aes(x = date, y = PCB8)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
     aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) +
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 8 concentration @ HS (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
-    legend.position = "right",
-    legend.key = element_blank()
-  )
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11),
+        legend.position = "right",
+        legend.key = element_blank())
 
 # See plot
 p.pcb8
@@ -559,45 +473,30 @@ ggsave("Output/Plots/Concentrations/AcePCB8_HS.png", plot = p.pcb8, width = 12,
 # PCB 15
 p.pcb15 <- ggplot(subset(ace, location2 == "HS"),
                   aes(x = date, y = PCB15)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
-    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) +
+    aes(shape = PCB15_unc_label, fill = PCB15_unc_label),
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 15 concentration @ HS (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
-    legend.position = "right",
-    legend.key = element_blank()
-  )
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11),
+        legend.position = "right",
+        legend.key = element_blank())
 
 # See plot
 p.pcb15
@@ -608,45 +507,30 @@ ggsave("Output/Plots/Concentrations/AcePCB15_HS.png", plot = p.pcb15, width = 12
 # PCB 18
 p.pcb18 <- ggplot(subset(ace, location2 == "HS"),
                   aes(x = date, y = PCB18.30)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
-    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) +
+    aes(shape = PCB18.30_unc_label, fill = PCB18.30_unc_label),
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 18+30 concentration @ HS (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
-    legend.position = "right",
-    legend.key = element_blank()
-  )
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11),
+        legend.position = "right",
+        legend.key = element_blank())
 
 # See plot
 p.pcb18
@@ -657,45 +541,30 @@ ggsave("Output/Plots/Concentrations/AcePCB18_HS.png", plot = p.pcb18, width = 12
 # PCB20.28
 p.pcb20 <- ggplot(subset(ace, location2 == "HS"),
                   aes(x = date, y = PCB20.28)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
-    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) +
+    aes(shape = PCB20.28_unc_label, fill = PCB20.28_unc_label),
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 20+28 concentration @ HS (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
-    legend.position = "right",
-    legend.key = element_blank()
-  )
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11),
+        legend.position = "right",
+        legend.key = element_blank())
 
 # See plot
 p.pcb20
@@ -706,45 +575,30 @@ ggsave("Output/Plots/Concentrations/AcePCB20_HS.png", plot = p.pcb20, width = 12
 # PCB 31
 p.pcb31 <- ggplot(subset(ace, location2 == "HS"),
                   aes(x = date, y = PCB31)) +
-  geom_rect(
-    data = band_df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Activity),
-    inherit.aes = FALSE,
-    alpha = 0.3,
-    color = NA
-  ) +
-  scale_fill_manual(
-    name = "Project phase",
-    values = c(
-      "Dredging" = "#F4A6B7",
-      "Construction" = "lightgreen",
-      "Idle" = "white"
-    )
-  ) +
+  geom_tile(data = activity_daily, aes(x = Date, y = 0, fill = Activity),
+            height = Inf, inherit.aes = FALSE, alpha = 0.3) +
+  scale_fill_manual(name = "Project phase",
+                    values = c("Dredging" = "#F4A6B7",
+                               "Construction" = "lightgreen",
+                               "Idle" = "white")) +
   ggnewscale::new_scale_fill() +
   geom_point(
-    aes(shape = PCB8_unc_label, fill = PCB8_unc_label),
-    color = "black", size = 2.5, stroke = 0.75
-  ) +
-  scale_shape_manual(
-    values = c("≤ DL" = 22, "> DL" = 21),
-    na.translate = FALSE
-  ) +
-  scale_fill_manual(
-    values = c("≤ DL" = NA, "> DL" = "#E69F00"),
-    na.translate = FALSE
-  ) +
+    aes(shape = PCB31_unc_label, fill = PCB31_unc_label),
+    color = "black", size = 2.5, stroke = 0.75, na.rm = TRUE) +
+  scale_shape_manual(values = c("< DL" = 22, "≥ DL" = 21),
+                     na.translate = FALSE) +
+  scale_fill_manual(values = c("< DL" = NA, "≥ DL" = "#E69F00"),
+                    na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
   labs(x = "", y = "PCB 31 concentration @ HS (ng/m3)") +
-  theme(
-    axis.text.x = element_text(face = "bold", size = 7, color = "black",
-                               angle = 60, hjust = 1),
-    axis.text.y = element_text(face = "bold", size = 10),
-    axis.title.y = element_text(face = "bold", size = 11),
-    legend.position = "right",
-    legend.key = element_blank()
-  )
+  theme(axis.text.x = element_text(face = "bold", size = 7,
+                                   color = "black", angle = 60,
+                                   hjust = 1),
+        axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 11),
+        legend.position = "right",
+        legend.key = element_blank())
 
 # See plot
 p.pcb31
