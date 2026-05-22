@@ -26,14 +26,16 @@
 }
 
 # Read data ---------------------------------------------------------------
-ace <- read.csv("Data/Air/EastChicago/ACE/ACEData.csv")
+ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
+
+# Remove empty spaces
+ace <- ace.raw %>%
+  filter(location != 0)
 
 # ACE Data ----------------------------------------------------------------
 # Change units to pg/m3 from ng/m3
 ace <- ace %>%
   mutate(across(starts_with("PCB") & !ends_with("_unc"), ~ . / 1000))
-ace <- ace %>%
-  mutate(location = factor(location,levels = c("South", "South_CDF", "HS","Con_South")))  # Explicit factor levels
 # Convert numeric date to Date format assuming Excel-style serial number
 # ccvs file needs to be this format for the date XXXXX (e.g., 41188)
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
