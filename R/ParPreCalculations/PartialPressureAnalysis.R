@@ -19,24 +19,26 @@
 }
 
 # Read data ---------------------------------------------------------------
-ace <- read.csv("Data/Air/EastChicago/ACE/ACEData.csv")
+ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
+
+# Remove empty spaces
+ace <- ace.raw %>%
+  filter(location != 0)
 
 # ACE Data ----------------------------------------------------------------
 # Change units to pg/m3 from ng/m3
 ace <- ace %>%
   mutate(across(starts_with("PCB") & !ends_with("_unc"), ~ . / 1000))
-ace <- ace %>%
-  mutate(location = factor(location,levels = c("South", "South_CDF", "HS","Con_South")))  # Explicit factor levels
 # Convert numeric date to Date format assuming Excel-style serial number
 # ccvs file needs to be this format for the date XXXXX (e.g., 41188)
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
 ace <- ace %>%
   mutate(
-    PCB8_unc_label = factor(PCB8_unc, labels = c("≤ DL", "> DL")),
-    PCB15_unc_label = factor(PCB15_unc, labels = c("≤ DL", "> DL")),
-    PCB18.30_unc_label = factor(PCB18.30_unc, labels = c("≤ DL", "> DL")),
-    PCB20.28_unc_label = factor(PCB20.28_unc, labels = c("≤ DL", "> DL")),
-    PCB31_unc_label = factor(PCB31_unc, labels = c("≤ DL", "> DL"))
+    PCB8_unc_label = factor(PCB8_unc, labels = c("< DL", "≥ DL")),
+    PCB15_unc_label = factor(PCB15_unc, labels = c("< DL", "≥ DL")),
+    PCB18.30_unc_label = factor(PCB18.30_unc, labels = c("< DL", "≥ DL")),
+    PCB20.28_unc_label = factor(PCB20.28_unc, labels = c("< DL", "≥ DL")),
+    PCB31_unc_label = factor(PCB31_unc, labels = c("< DL", "≥ DL"))
   )
 
 # Both sites --------------------------------------------------------------
