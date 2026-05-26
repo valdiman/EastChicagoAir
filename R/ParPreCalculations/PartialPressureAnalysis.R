@@ -69,19 +69,19 @@ mw_vec <- setNames(mw.pcb$mw, mw.pcb$PCB)
 ace_pp <- ace %>%
   mutate(
     air_temp = air.temp$air_temp,
-    PCB8 = if_else(PCB8_unc_label == "> DL",
+    PCB8 = if_else(PCB8_unc_label == "≥ DL",
                    (PCB8 * 1e-9 / mw_vec["PCB8"]) * R * air_temp,
                    NA_real_),
-    PCB15 = if_else(PCB15_unc_label == "> DL",
+    PCB15 = if_else(PCB15_unc_label == "≥ DL",
                     (PCB15 * 1e-9 / mw_vec["PCB15"]) * R * air_temp,
                     NA_real_),
-    PCB18.30 = if_else(PCB18.30_unc_label == "> DL",
+    PCB18.30 = if_else(PCB18.30_unc_label == "≥ DL",
                        (PCB18.30 * 1e-9 / mw_vec["PCB18.30"]) * R * air_temp,
                        NA_real_),
-    PCB20.28 = if_else(PCB20.28_unc_label == "> DL",
+    PCB20.28 = if_else(PCB20.28_unc_label == "≥ DL",
                        (PCB20.28 * 1e-9 / mw_vec["PCB20.28"]) * R * air_temp,
                        NA_real_),
-    PCB31 = if_else(PCB31_unc_label == "> DL",
+    PCB31 = if_else(PCB31_unc_label == "≥ DL",
                     (PCB31 * 1e-9 / mw_vec["PCB31"]) * R * air_temp,
                     NA_real_)
   ) %>%
