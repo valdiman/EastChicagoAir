@@ -46,10 +46,12 @@ print(stations_nearby)
 #    Station 1 = backup / earlier station
 #    Station 2 = main station / later station
 # ------------------------------------------------------------
+# CHICAGO MIDWAY INTL ARPT
 station.1 <- stations %>%
   filter(usaf == "725340") %>%
   slice(1)
 
+# GARY/CHICAGO AIRPORT
 station.2 <- stations %>%
   filter(usaf == "725337") %>%
   slice(1)

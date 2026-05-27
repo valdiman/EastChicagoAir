@@ -41,5 +41,6 @@ dir.create("Output/PUFPASModel/Vef/isd_light")
 dir.create("Output/PUFPASModel/Vef/MERRA")
 dir.create("Output/Plots")
 dir.create("Output/Plots/Concentrations")
+dir.create("Output/Plots/Extra")
 dir.create("Output/Plots/PartialPressure")
 
