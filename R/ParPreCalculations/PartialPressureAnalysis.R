@@ -264,7 +264,7 @@ p.pp.pcb20 <- ggplot(ace_pp_temp, aes(x = invT, y = log(PCB20.28))) +
 p.pp.pcb20
 
 # save plot
-ggsave("Output/Plots/PartialPressure/AcePCB2028_Pp_CDF_HS.png", plot = p.pp.pcb20,
+ggsave("Output/Plots/PartialPressure/AcePCB20_Pp_CDF_HS.png", plot = p.pp.pcb20,
        width = 12, height = 6, dpi = 500)
 
 # PCB 31
@@ -455,7 +455,7 @@ p.pp.pcb18 <- ggplot(subset(ace_pp_temp, Activity == "Idle"),
 p.pp.pcb18
 
 # save plot
-ggsave("Output/Plots/PartialPressure/AcePCB18.30_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb18,
+ggsave("Output/Plots/PartialPressure/AcePCB18_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb18,
        width = 12, height = 6, dpi = 500)
 
 # PCB 20.28
@@ -499,7 +499,7 @@ p.pp.pcb20 <- ggplot(subset(ace_pp_temp, Activity == "Idle"),
 p.pp.pcb20
 
 # save plot
-ggsave("Output/Plots/PartialPressure/AcePCB20.28_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb20,
+ggsave("Output/Plots/PartialPressure/AcePCB20_Pp_CDF_HS_NoActivities.png", plot = p.pp.pcb20,
        width = 12, height = 6, dpi = 500)
 
 # PCB 31
@@ -669,7 +669,7 @@ p.pp.pcb18 <- ggplot(
 p.pp.pcb18
 
 # save plot
-ggsave("Output/Plots/PartialPressure/AcePCB18.30_Pp_CDF_HS_Activities.png", plot = p.pp.pcb18,
+ggsave("Output/Plots/PartialPressure/AcePCB18_Pp_CDF_HS_Activities.png", plot = p.pp.pcb18,
        width = 12, height = 6, dpi = 500)
 
 # PCB 20.28
@@ -710,7 +710,7 @@ p.pp.pcb20 <- ggplot(
 p.pp.pcb20
 
 # save plot
-ggsave("Output/Plots/PartialPressure/AcePCB20.28_Pp_CDF_HS_Activities.png", plot = p.pp.pcb20,
+ggsave("Output/Plots/PartialPressure/AcePCB20_Pp_CDF_HS_Activities.png", plot = p.pp.pcb20,
        width = 12, height = 6, dpi = 500)
 
 # PCB 31
