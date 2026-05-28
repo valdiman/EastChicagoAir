@@ -52,6 +52,7 @@ meteo.data$air_temp <- meteo.data$air_temp + 273.15
 meteo.data <- meteo.data %>%
   mutate(invT = 1000 / meteo.data$air_temp)
 
+# For each location there is meteorological data, with duplicates
 meteo_unique <- meteo.data[!duplicated(meteo.data$date), ]
 
 # Read daily activity -----------------------------------------------------
@@ -61,13 +62,13 @@ activity_daily <- read.csv("Data/RemediationProject/activity_daily.csv")
 activity_daily$Date <- as.Date(activity_daily$Date)
 names(activity_daily)[names(activity_daily) == "Date"] <- "date"
 activity_daily$Activity <- as.factor(activity_daily$Activity)
-activity_unique <- activity_daily[!duplicated(activity_daily$date), ]
 
 # Add meteorological and daily activities to ace --------------------------
 ace <- ace %>%
   left_join(meteo_unique, by = "date") %>%
-  left_join(activity_unique, by = "date")
+  left_join(activity_daily, by = "date")
 
+# Set idle as reference
 ace$Activity <- relevel(ace$Activity, ref = "Idle")
 
 # Select locations
@@ -467,5 +468,209 @@ fit.pcb31
 games_howell_test(
   hs_ace,
   logPCB31 ~ Activity)
+
+# Include wind direction in analysis --------------------------------------
+hs_ace_w <- hs_ace %>%
+  filter(
+    Activity != "Dredging" |
+      between(wind_direction, 30, 120))
+
+# PCB 8 -------------------------------------------------------------------
+# log10 transform
+hs_ace_w$logPCB8 <- log10(hs_ace_w$PCB8)
+
+# Boxplot
+ggplot(hs_ace_w,
+       aes(Activity, logPCB8,
+           fill = Activity)) +
+  geom_boxplot()
+
+# Histogram
+hist(hs_ace_w$logPCB8)
+
+# Q-Q plot
+qqnorm(hs_ace_w$logPCB8)
+qqline(hs_ace_w$logPCB8,
+       col = "red")
+
+# Normality test
+by(hs_ace_w$logPCB8,
+   hs_ace_w$Activity,
+   shapiro.test)
+
+# Normality test
+leveneTest(logPCB8 ~ Activity,
+           data = hs_ace_w)
+
+# Welch ANOVA + Games-Howell
+fit.pcb8 <- oneway.test(logPCB8 ~ Activity,
+                        data = hs_ace_w,
+                        var.equal = FALSE)
+
+fit.pcb8
+
+# Post hoc comparisons
+games_howell_test(
+  hs_ace_w,
+  logPCB8 ~ Activity)
+
+# PCB 15 -------------------------------------------------------------------
+# log10 transform
+hs_ace_w$logPCB15 <- log10(hs_ace_w$PCB15)
+
+# Boxplot
+ggplot(hs_ace_w,
+       aes(Activity, logPCB15,
+           fill = Activity)) +
+  geom_boxplot()
+
+# Histogram
+hist(hs_ace_w$logPCB15)
+
+# Q-Q plot
+qqnorm(hs_ace_w$logPCB15)
+qqline(hs_ace_w$logPCB15,
+       col = "red")
+
+# Normality test
+by(hs_ace_w$logPCB15,
+   hs_ace_w$Activity,
+   shapiro.test)
+
+# Normality test
+leveneTest(logPCB15 ~ Activity,
+           data = hs_ace_w)
+
+# Welch ANOVA + Games-Howell
+fit.pcb15 <- oneway.test(logPCB15 ~ Activity,
+                        data = hs_ace_w,
+                        var.equal = FALSE)
+
+fit.pcb15
+
+# Post hoc comparisons
+games_howell_test(
+  hs_ace_w,
+  logPCB15 ~ Activity)
+
+# PCB 18+30 -----------------------------------------------------------------
+# log10 transform
+hs_ace_w$logPCB18.30 <- log10(hs_ace_w$PCB18.30)
+
+# Boxplot
+ggplot(hs_ace_w,
+       aes(Activity, logPCB18.30,
+           fill = Activity)) +
+  geom_boxplot()
+
+# Histogram
+hist(hs_ace_w$logPCB18.30)
+
+# Q-Q plot
+qqnorm(hs_ace_w$logPCB18.30)
+qqline(hs_ace_w$logPCB18.30,
+       col = "red")
+
+# Normality test
+by(hs_ace_w$logPCB18.30,
+   hs_ace_w$Activity,
+   shapiro.test)
+
+# Normality test
+leveneTest(logPCB18.30 ~ Activity,
+           data = hs_ace_w)
+
+# Welch ANOVA + Games-Howell
+fit.pcb18.30 <- oneway.test(logPCB18.30 ~ Activity,
+                         data = hs_ace_w,
+                         var.equal = FALSE)
+
+fit.pcb18.30
+
+# Post hoc comparisons
+games_howell_test(
+  hs_ace_w,
+  logPCB18.30 ~ Activity)
+
+# PCB 20 + 28 -----------------------------------------------------------------
+# log10 transform
+hs_ace_w$logPCB20.28 <- log10(hs_ace_w$PCB20.28)
+
+# Boxplot
+ggplot(hs_ace_w,
+       aes(Activity, logPCB20.28,
+           fill = Activity)) +
+  geom_boxplot()
+
+# Histogram
+hist(hs_ace_w$logPCB20.28)
+
+# Q-Q plot
+qqnorm(hs_ace_w$logPCB20.28)
+qqline(hs_ace_w$logPCB20.28,
+       col = "red")
+
+# Normality test
+by(hs_ace_w$logPCB20.28,
+   hs_ace_w$Activity,
+   shapiro.test)
+
+# Normality test
+leveneTest(logPCB20.28 ~ Activity,
+           data = hs_ace_w)
+
+# Welch ANOVA + Games-Howell
+fit.pcb20.28 <- oneway.test(logPCB20.28 ~ Activity,
+                            data = hs_ace_w,
+                            var.equal = FALSE)
+
+fit.pcb20.28
+
+# Post hoc comparisons
+# group2 - group1
+games_howell_test(
+  hs_ace_w,
+  logPCB20.28 ~ Activity)
+
+# PCB 31 -----------------------------------------------------------------
+# log10 transform
+hs_ace_w$logPCB31 <- log10(hs_ace_w$PCB31)
+
+# Boxplot
+ggplot(hs_ace_w,
+       aes(Activity, logPCB31,
+           fill = Activity)) +
+  geom_boxplot()
+
+# Histogram
+hist(hs_ace_w$logPCB31)
+
+# Q-Q plot
+qqnorm(hs_ace_w$logPCB31)
+qqline(hs_ace_w$logPCB31,
+       col = "red")
+
+# Normality test
+by(hs_ace_w$logPCB31,
+   hs_ace_w$Activity,
+   shapiro.test)
+
+# Normality test
+leveneTest(logPCB31 ~ Activity,
+           data = hs_ace_w)
+
+# Welch ANOVA + Games-Howell
+fit.pcb31 <- oneway.test(logPCB31 ~ Activity,
+                            data = hs_ace_w,
+                            var.equal = FALSE)
+
+fit.pcb31
+
+# Post hoc comparisons
+# group2 - group1
+games_howell_test(
+  hs_ace_w,
+  logPCB31 ~ Activity)
+
 
 
