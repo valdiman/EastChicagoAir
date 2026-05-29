@@ -47,20 +47,18 @@ meteo.data <- read.csv("Data/Meteorology/Meteo_EastChicago.csv")
 meteo.data$date <- as.Date(meteo.data$date, origin = "1899-12-30")
 # Change air temperature to Kelvin
 meteo.data$air_temp <- meteo.data$air_temp + 273.15
-
 # Add 1/T (invT)
 meteo.data <- meteo.data %>%
   mutate(invT = 1000 / meteo.data$air_temp)
-
-# For each location there is meteorological data, with duplicates
+# Because 2 locations, meteorological data is duplicates
 meteo_unique <- meteo.data[!duplicated(meteo.data$date), ]
+# Check format
+str(meteo_unique[1:3, ])
 
 # Read daily activity -----------------------------------------------------
 activity_daily <- read.csv("Data/RemediationProject/activity_daily.csv")
-
 # Change format
-activity_daily$Date <- as.Date(activity_daily$Date)
-names(activity_daily)[names(activity_daily) == "Date"] <- "date"
+activity_daily$date <- as.Date(activity_daily$date)
 activity_daily$Activity <- as.factor(activity_daily$Activity)
 
 # Add meteorological and daily activities to ace --------------------------
@@ -75,602 +73,215 @@ ace$Activity <- relevel(ace$Activity, ref = "Idle")
 south_ace <- subset(ace, location == "South")
 hs_ace <- subset(ace, location == "HS")
 
-# Statistical analysis: Activities ----------------------------------------
-# South -------------------------------------------------------------------
-# PCB 8 -------------------------------------------------------------------
-# log10 transform
-south_ace$logPCB8 <- log10(south_ace$PCB8)
+# Filter by wind direction
+# Both sites are located in general southeast of dredging
+# Select only when wind is blowing into both sites
+south_ace_w <- south_ace %>%
+  filter(
+    Activity != "Dredging" |
+      between(wind_direction, 30, 120))
 
-# Boxplot
-ggplot(south_ace,
-       aes(Activity, logPCB8,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(south_ace$logPCB8)
-
-# Q-Q plot
-qqnorm(south_ace$logPCB8)
-qqline(south_ace$logPCB8,
-       col = "red")
-
-# Normality test
-by(south_ace$logPCB8,
-   south_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB8 ~ Activity,
-           data = south_ace)
-
-# ANOVA
-fit.pcb8 <- aov(logPCB8 ~ Activity,
-           data = south_ace)
-
-qqnorm(residuals(fit.pcb8))
-qqline(residuals(fit.pcb8),
-       col = "red")
-
-summary(fit.pcb8)
-
-# Post hoc comparisons
-TukeyHSD(fit.pcb8)
-
-# PCB 15 -------------------------------------------------------------------
-# log10 transform
-south_ace$logPCB15 <- log10(south_ace$PCB15)
-
-# Boxplot
-ggplot(south_ace,
-       aes(Activity, logPCB15,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(south_ace$logPCB15)
-
-# Q-Q plot
-qqnorm(south_ace$logPCB15)
-qqline(south_ace$logPCB15,
-       col = "red")
-
-# Normality test
-by(south_ace$logPCB15,
-   south_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB15 ~ Activity,
-           data = south_ace)
-
-# PCB15 doesn't follow normal nor log10 distribution
-kruskal.test(PCB15 ~ Activity,
-             data = south_ace)
-
-pairwise.wilcox.test(
-  south_ace$PCB15,
-  south_ace$Activity,
-  p.adjust.method = "BH")
-
-# PCB 18+30 -----------------------------------------------------------------
-# log10 transform
-south_ace$logPCB18.30 <- log10(south_ace$PCB18.30)
-
-# Boxplot
-ggplot(south_ace,
-       aes(Activity, logPCB18.30,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(south_ace$logPCB18.30)
-
-# Q-Q plot
-qqnorm(south_ace$logPCB18.30)
-qqline(south_ace$logPCB18.30,
-       col = "red")
-
-# Normality test
-by(south_ace$logPCB18.30,
-   south_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB18.30 ~ Activity,
-           data = south_ace)
-
-# ANOVA
-fit.pcb18.30 <- aov(logPCB18.30 ~ Activity,
-                data = south_ace)
-
-qqnorm(residuals(fit.pcb18.30))
-qqline(residuals(fit.pcb18.30),
-       col = "red")
-
-summary(fit.pcb18.30)
-
-# Post hoc comparisons
-TukeyHSD(fit.pcb18.30)
-
-# PCB 20 + 28 -----------------------------------------------------------------
-# log10 transform
-south_ace$logPCB20.28 <- log10(south_ace$PCB20.28)
-
-# Boxplot
-ggplot(south_ace,
-       aes(Activity, logPCB20.28,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(south_ace$logPCB20.28)
-
-# Q-Q plot
-qqnorm(south_ace$logPCB20.28)
-qqline(south_ace$logPCB20.28,
-       col = "red")
-
-# Normality test
-by(south_ace$logPCB20.28,
-   south_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB20.28 ~ Activity,
-           data = south_ace)
-
-# ANOVA
-fit.pcb20.28 <- aov(logPCB20.28 ~ Activity,
-                    data = south_ace)
-
-qqnorm(residuals(fit.pcb20.28))
-qqline(residuals(fit.pcb20.28),
-       col = "red")
-
-summary(fit.pcb20.28)
-
-# Post hoc comparisons
-TukeyHSD(fit.pcb20.28)
-
-# PCB 31 -----------------------------------------------------------------
-# log10 transform
-south_ace$logPCB31 <- log10(south_ace$PCB31)
-
-# Boxplot
-ggplot(south_ace,
-       aes(Activity, logPCB31,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(south_ace$logPCB31)
-
-# Q-Q plot
-qqnorm(south_ace$logPCB31)
-qqline(south_ace$logPCB31,
-       col = "red")
-
-# Normality test
-by(south_ace$logPCB31,
-   south_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB31 ~ Activity,
-           data = south_ace)
-
-# ANOVA
-fit.pcb31 <- aov(logPCB31 ~ Activity,
-                    data = south_ace)
-
-qqnorm(residuals(fit.pcb31))
-qqline(residuals(fit.pcb31),
-       col = "red")
-
-summary(fit.pcb31)
-
-# Post hoc comparisons
-TukeyHSD(fit.pcb31)
-
-# HS -------------------------------------------------------------------
-# PCB 8 -------------------------------------------------------------------
-# log10 transform
-hs_ace$logPCB8 <- log10(hs_ace$PCB8)
-
-# Boxplot
-ggplot(hs_ace,
-       aes(Activity, logPCB8,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(hs_ace$logPCB8)
-
-# Q-Q plot
-qqnorm(hs_ace$logPCB8)
-qqline(hs_ace$logPCB8,
-       col = "red")
-
-# Normality test
-by(hs_ace$logPCB8,
-   hs_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB8 ~ Activity,
-           data = hs_ace)
-
-# Welch ANOVA + Games-Howell
-fit.pcb8 <- oneway.test(logPCB8 ~ Activity,
-                        data = hs_ace,
-                        var.equal = FALSE)
-
-fit.pcb8
-
-# Post hoc comparisons
-games_howell_test(
-  hs_ace,
-  logPCB8 ~ Activity)
-
-# PCB 15 -------------------------------------------------------------------
-# log10 transform
-hs_ace$logPCB15 <- log10(hs_ace$PCB15)
-
-# Boxplot
-ggplot(hs_ace,
-       aes(Activity, logPCB15,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(hs_ace$logPCB15)
-
-# Q-Q plot
-qqnorm(hs_ace$logPCB15)
-qqline(hs_ace$logPCB15,
-       col = "red")
-
-# Normality test
-by(hs_ace$logPCB15,
-   hs_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB15 ~ Activity,
-           data = hs_ace)
-
-# Welch ANOVA + Games-Howell
-fit.pcb15 <- oneway.test(logPCB15 ~ Activity,
-                        data = hs_ace,
-                        var.equal = FALSE)
-
-fit.pcb15
-
-# Post hoc comparisons
-games_howell_test(
-  hs_ace,
-  logPCB15 ~ Activity)
-
-# PCB 18.30 -------------------------------------------------------------------
-# log10 transform
-hs_ace$logPCB18.30 <- log10(hs_ace$PCB18.30)
-
-# Boxplot
-ggplot(hs_ace,
-       aes(Activity, logPCB18.30,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(hs_ace$logPCB18.30)
-
-# Q-Q plot
-qqnorm(hs_ace$logPCB18.30)
-qqline(hs_ace$logPCB18.30,
-       col = "red")
-
-# Normality test
-by(hs_ace$logPCB18.30,
-   hs_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB18.30 ~ Activity,
-           data = hs_ace)
-
-# Welch ANOVA + Games-Howell
-fit.pcb18.30 <- oneway.test(logPCB18.30 ~ Activity,
-                         data = hs_ace,
-                         var.equal = FALSE)
-
-fit.pcb18.30
-
-# Post hoc comparisons
-games_howell_test(
-  hs_ace,
-  logPCB18.30 ~ Activity)
-
-# PCB 20.28 -------------------------------------------------------------------
-# log10 transform
-hs_ace$logPCB20.28 <- log10(hs_ace$PCB20.28)
-
-# Boxplot
-ggplot(hs_ace,
-       aes(Activity, logPCB20.28,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(hs_ace$logPCB20.28)
-
-# Q-Q plot
-qqnorm(hs_ace$logPCB20.28)
-qqline(hs_ace$logPCB20.28,
-       col = "red")
-
-# Normality test
-by(hs_ace$logPCB20.28,
-   hs_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB20.28 ~ Activity,
-           data = hs_ace)
-
-# Welch ANOVA + Games-Howell
-fit.pcb20.28 <- oneway.test(logPCB20.28 ~ Activity,
-                            data = hs_ace,
-                            var.equal = FALSE)
-
-fit.pcb20.28
-
-# Post hoc comparisons
-games_howell_test(
-  hs_ace,
-  logPCB20.28 ~ Activity)
-
-# PCB 31 -------------------------------------------------------------------
-# log10 transform
-hs_ace$logPCB31 <- log10(hs_ace$PCB31)
-
-# Boxplot
-ggplot(hs_ace,
-       aes(Activity, logPCB31,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(hs_ace$logPCB31)
-
-# Q-Q plot
-qqnorm(hs_ace$logPCB31)
-qqline(hs_ace$logPCB31,
-       col = "red")
-
-# Normality test
-by(hs_ace$logPCB31,
-   hs_ace$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB31 ~ Activity,
-           data = hs_ace)
-
-# Welch ANOVA + Games-Howell
-fit.pcb31 <- oneway.test(logPCB31 ~ Activity,
-                            data = hs_ace,
-                            var.equal = FALSE)
-
-fit.pcb31
-
-# Post hoc comparisons
-games_howell_test(
-  hs_ace,
-  logPCB31 ~ Activity)
-
-# Include wind direction in analysis --------------------------------------
 hs_ace_w <- hs_ace %>%
   filter(
     Activity != "Dredging" |
       between(wind_direction, 30, 120))
 
-# PCB 8 -------------------------------------------------------------------
-# log10 transform
-hs_ace_w$logPCB8 <- log10(hs_ace_w$PCB8)
+# Statistical analysis: Activities ----------------------------------------
+# Function
+run_pcb_analysis <- function(data,
+                             pcb,
+                             dataset_name) {
+  
+  # Output directory
+  output_dir <- file.path("Output/Data/Air/StatisticalAnalysis", pcb)
+  
+  # --------------------------------------------------
+  # Log transform
+  # --------------------------------------------------
+  
+  data$logPCB <- log10(data[[pcb]])
+  
+  # --------------------------------------------------
+  # Assumption tests
+  # --------------------------------------------------
+  
+  shapiro_results <- by(
+    data$logPCB,
+    data$Activity,
+    shapiro.test
+  )
+  
+  levene_results <- leveneTest(
+    logPCB ~ Activity,
+    data = data
+  )
+  
+  # --------------------------------------------------
+  # Classical ANOVA + Tukey
+  # --------------------------------------------------
+  
+  fit_aov <- aov(
+    logPCB ~ Activity,
+    data = data
+  )
+  
+  anova_results <- summary(fit_aov)
+  
+  tukey_results <- TukeyHSD(fit_aov)
+  
+  tukey_table <- as.data.frame(
+    tukey_results$Activity
+  )
+  
+  tukey_table$Comparison <- rownames(
+    tukey_table
+  )
+  
+  rownames(tukey_table) <- NULL
+  
+  # --------------------------------------------------
+  # Welch ANOVA + Games-Howell
+  # --------------------------------------------------
+  
+  fit_welch <- oneway.test(
+    logPCB ~ Activity,
+    data = data,
+    var.equal = FALSE
+  )
+  
+  gh_results <- games_howell_test(
+    data,
+    logPCB ~ Activity
+  )
+  
+  gh_results$fold_change <- 10^(gh_results$estimate)
+  
+  # --------------------------------------------------
+  # Kruskal-Wallis + Dunn
+  # --------------------------------------------------
+  
+  kw_results <- kruskal.test(
+    logPCB ~ Activity,
+    data = data
+  )
+  
+  dunn_results <- dunn_test(
+    data,
+    logPCB ~ Activity,
+    p.adjust.method = "holm"
+  )
+  
+  # --------------------------------------------------
+  # Summary table
+  # --------------------------------------------------
+  
+  summary_table <- data.frame(
+    Dataset = dataset_name,
+    PCB = pcb,
+    
+    Levene_F = levene_results$`F value`[1],
+    Levene_p = levene_results$`Pr(>F)`[1],
+    
+    ANOVA_F = anova_results[[1]]$`F value`[1],
+    ANOVA_p = anova_results[[1]]$`Pr(>F)`[1],
+    
+    Welch_F = unname(fit_welch$statistic),
+    Welch_p = fit_welch$p.value,
+    
+    Kruskal_ChiSq = unname(kw_results$statistic),
+    Kruskal_p = kw_results$p.value
+  )
+  
+  # --------------------------------------------------
+  # Save outputs
+  # --------------------------------------------------
+  
+  write.csv(
+    tukey_table,
+    file.path(
+      output_dir,
+      paste0("02_", dataset_name, "_Tukey.csv")
+    ),
+    row.names = FALSE
+  )
+  
+  write.csv(
+    gh_results,
+    file.path(
+      output_dir,
+      paste0("03_", dataset_name, "_GamesHowell.csv")
+    ),
+    row.names = FALSE
+  )
+  
+  write.csv(
+    dunn_results,
+    file.path(
+      output_dir,
+      paste0("04_", dataset_name, "_Dunn.csv")
+    ),
+    row.names = FALSE
+  )
+  
+  write.csv(
+    summary_table,
+    file.path(
+      output_dir,
+      paste0("01_", dataset_name, "_Summary.csv")
+    ),
+    row.names = FALSE
+  )
+  
+  # --------------------------------------------------
+  # Return results
+  # --------------------------------------------------
+  
+  results <- list(
+    pcb = pcb,
+    dataset = dataset_name,
+    
+    shapiro = shapiro_results,
+    levene = levene_results,
+    
+    anova = fit_aov,
+    anova_summary = anova_results,
+    tukey = tukey_results,
+    
+    welch = fit_welch,
+    games_howell = gh_results,
+    
+    kruskal = kw_results,
+    dunn = dunn_results
+  )
+  
+  return(results)
+}
 
-# Boxplot
-ggplot(hs_ace_w,
-       aes(Activity, logPCB8,
-           fill = Activity)) +
-  geom_boxplot()
+# PCB8
+pcb8_south <- run_pcb_analysis(
+  south_ace,
+  "PCB8",
+  "South"
+)
 
-# Histogram
-hist(hs_ace_w$logPCB8)
+pcb8_south_w <- run_pcb_analysis(
+  south_ace_w,
+  "PCB8",
+  "South_Wind"
+)
 
-# Q-Q plot
-qqnorm(hs_ace_w$logPCB8)
-qqline(hs_ace_w$logPCB8,
-       col = "red")
+pcb8_hs <- run_pcb_analysis(
+  hs_ace,
+  "PCB8",
+  "HS"
+)
 
-# Normality test
-by(hs_ace_w$logPCB8,
-   hs_ace_w$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB8 ~ Activity,
-           data = hs_ace_w)
-
-# Welch ANOVA + Games-Howell
-fit.pcb8 <- oneway.test(logPCB8 ~ Activity,
-                        data = hs_ace_w,
-                        var.equal = FALSE)
-
-fit.pcb8
-
-# Post hoc comparisons
-games_howell_test(
+pcb8_hs_w <- run_pcb_analysis(
   hs_ace_w,
-  logPCB8 ~ Activity)
+  "PCB8",
+  "HS_Wind"
+)
 
-# PCB 15 -------------------------------------------------------------------
-# log10 transform
-hs_ace_w$logPCB15 <- log10(hs_ace_w$PCB15)
-
-# Boxplot
-ggplot(hs_ace_w,
-       aes(Activity, logPCB15,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(hs_ace_w$logPCB15)
-
-# Q-Q plot
-qqnorm(hs_ace_w$logPCB15)
-qqline(hs_ace_w$logPCB15,
-       col = "red")
-
-# Normality test
-by(hs_ace_w$logPCB15,
-   hs_ace_w$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB15 ~ Activity,
-           data = hs_ace_w)
-
-# Welch ANOVA + Games-Howell
-fit.pcb15 <- oneway.test(logPCB15 ~ Activity,
-                        data = hs_ace_w,
-                        var.equal = FALSE)
-
-fit.pcb15
-
-# Post hoc comparisons
-games_howell_test(
-  hs_ace_w,
-  logPCB15 ~ Activity)
-
-# PCB 18+30 -----------------------------------------------------------------
-# log10 transform
-hs_ace_w$logPCB18.30 <- log10(hs_ace_w$PCB18.30)
-
-# Boxplot
-ggplot(hs_ace_w,
-       aes(Activity, logPCB18.30,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(hs_ace_w$logPCB18.30)
-
-# Q-Q plot
-qqnorm(hs_ace_w$logPCB18.30)
-qqline(hs_ace_w$logPCB18.30,
-       col = "red")
-
-# Normality test
-by(hs_ace_w$logPCB18.30,
-   hs_ace_w$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB18.30 ~ Activity,
-           data = hs_ace_w)
-
-# Welch ANOVA + Games-Howell
-fit.pcb18.30 <- oneway.test(logPCB18.30 ~ Activity,
-                         data = hs_ace_w,
-                         var.equal = FALSE)
-
-fit.pcb18.30
-
-# Post hoc comparisons
-games_howell_test(
-  hs_ace_w,
-  logPCB18.30 ~ Activity)
-
-# PCB 20 + 28 -----------------------------------------------------------------
-# log10 transform
-hs_ace_w$logPCB20.28 <- log10(hs_ace_w$PCB20.28)
-
-# Boxplot
-ggplot(hs_ace_w,
-       aes(Activity, logPCB20.28,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(hs_ace_w$logPCB20.28)
-
-# Q-Q plot
-qqnorm(hs_ace_w$logPCB20.28)
-qqline(hs_ace_w$logPCB20.28,
-       col = "red")
-
-# Normality test
-by(hs_ace_w$logPCB20.28,
-   hs_ace_w$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB20.28 ~ Activity,
-           data = hs_ace_w)
-
-# Welch ANOVA + Games-Howell
-fit.pcb20.28 <- oneway.test(logPCB20.28 ~ Activity,
-                            data = hs_ace_w,
-                            var.equal = FALSE)
-
-fit.pcb20.28
-
-# Post hoc comparisons
-# group2 - group1
-games_howell_test(
-  hs_ace_w,
-  logPCB20.28 ~ Activity)
-
-# PCB 31 -----------------------------------------------------------------
-# log10 transform
-hs_ace_w$logPCB31 <- log10(hs_ace_w$PCB31)
-
-# Boxplot
-ggplot(hs_ace_w,
-       aes(Activity, logPCB31,
-           fill = Activity)) +
-  geom_boxplot()
-
-# Histogram
-hist(hs_ace_w$logPCB31)
-
-# Q-Q plot
-qqnorm(hs_ace_w$logPCB31)
-qqline(hs_ace_w$logPCB31,
-       col = "red")
-
-# Normality test
-by(hs_ace_w$logPCB31,
-   hs_ace_w$Activity,
-   shapiro.test)
-
-# Normality test
-leveneTest(logPCB31 ~ Activity,
-           data = hs_ace_w)
-
-# Welch ANOVA + Games-Howell
-fit.pcb31 <- oneway.test(logPCB31 ~ Activity,
-                            data = hs_ace_w,
-                            var.equal = FALSE)
-
-fit.pcb31
-
-# Post hoc comparisons
-# group2 - group1
-games_howell_test(
-  hs_ace_w,
-  logPCB31 ~ Activity)
 
 
 
