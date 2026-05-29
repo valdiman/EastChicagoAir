@@ -88,93 +88,55 @@ hs_ace_w <- hs_ace %>%
 
 # Statistical analysis: Activities ----------------------------------------
 # Function
-run_pcb_analysis <- function(data,
-                             pcb,
-                             dataset_name) {
+run_pcb_analysis <- function(data, pcb, dataset_name) {
   
   # Output directory
   output_dir <- file.path("Output/Data/Air/StatisticalAnalysis", pcb)
-  
-  # --------------------------------------------------
   # Log transform
-  # --------------------------------------------------
-  
   data$logPCB <- log10(data[[pcb]])
   
-  # --------------------------------------------------
   # Assumption tests
-  # --------------------------------------------------
-  
   shapiro_results <- by(
     data$logPCB,
     data$Activity,
-    shapiro.test
-  )
+    shapiro.test)
   
   levene_results <- leveneTest(
     logPCB ~ Activity,
-    data = data
-  )
+    data = data)
   
-  # --------------------------------------------------
   # Classical ANOVA + Tukey
-  # --------------------------------------------------
-  
   fit_aov <- aov(
     logPCB ~ Activity,
-    data = data
-  )
-  
+    data = data)
   anova_results <- summary(fit_aov)
-  
   tukey_results <- TukeyHSD(fit_aov)
-  
   tukey_table <- as.data.frame(
-    tukey_results$Activity
-  )
-  
+    tukey_results$Activity)
   tukey_table$Comparison <- rownames(
-    tukey_table
-  )
-  
+    tukey_table)
   rownames(tukey_table) <- NULL
   
-  # --------------------------------------------------
   # Welch ANOVA + Games-Howell
-  # --------------------------------------------------
-  
   fit_welch <- oneway.test(
     logPCB ~ Activity,
     data = data,
-    var.equal = FALSE
-  )
-  
+    var.equal = FALSE)
   gh_results <- games_howell_test(
     data,
-    logPCB ~ Activity
-  )
-  
+    logPCB ~ Activity)
   gh_results$fold_change <- 10^(gh_results$estimate)
   
-  # --------------------------------------------------
   # Kruskal-Wallis + Dunn
-  # --------------------------------------------------
-  
   kw_results <- kruskal.test(
     logPCB ~ Activity,
-    data = data
-  )
-  
+    data = data)
   dunn_results <- dunn_test(
     data,
     logPCB ~ Activity,
-    p.adjust.method = "holm"
-  )
+    p.adjust.method = "holm")
   
-  # --------------------------------------------------
   # Summary table
-  # --------------------------------------------------
-  
   summary_table <- data.frame(
     Dataset = dataset_name,
     PCB = pcb,
@@ -189,53 +151,29 @@ run_pcb_analysis <- function(data,
     Welch_p = fit_welch$p.value,
     
     Kruskal_ChiSq = unname(kw_results$statistic),
-    Kruskal_p = kw_results$p.value
-  )
+    Kruskal_p = kw_results$p.value)
   
-  # --------------------------------------------------
   # Save outputs
-  # --------------------------------------------------
+  write.csv(tukey_table,
+            file.path(output_dir,
+                      paste0("02_", dataset_name, "_Tukey.csv")),
+            row.names = FALSE)
+  write.csv(gh_results,
+            file.path(output_dir,
+                      paste0("03_", dataset_name, "_GamesHowell.csv")),
+            row.names = FALSE)
   
-  write.csv(
-    tukey_table,
-    file.path(
-      output_dir,
-      paste0("02_", dataset_name, "_Tukey.csv")
-    ),
-    row.names = FALSE
-  )
+  write.csv(dunn_results,
+            file.path(output_dir,
+                      paste0("04_", dataset_name, "_Dunn.csv")),
+            row.names = FALSE)
   
-  write.csv(
-    gh_results,
-    file.path(
-      output_dir,
-      paste0("03_", dataset_name, "_GamesHowell.csv")
-    ),
-    row.names = FALSE
-  )
+  write.csv(summary_table,
+            file.path(output_dir,
+                      paste0("01_", dataset_name, "_Summary.csv")),
+            row.names = FALSE)
   
-  write.csv(
-    dunn_results,
-    file.path(
-      output_dir,
-      paste0("04_", dataset_name, "_Dunn.csv")
-    ),
-    row.names = FALSE
-  )
-  
-  write.csv(
-    summary_table,
-    file.path(
-      output_dir,
-      paste0("01_", dataset_name, "_Summary.csv")
-    ),
-    row.names = FALSE
-  )
-  
-  # --------------------------------------------------
   # Return results
-  # --------------------------------------------------
-  
   results <- list(
     pcb = pcb,
     dataset = dataset_name,
@@ -251,35 +189,111 @@ run_pcb_analysis <- function(data,
     games_howell = gh_results,
     
     kruskal = kw_results,
-    dunn = dunn_results
-  )
+    dunn = dunn_results)
   
   return(results)
 }
 
 # PCB8
-pcb8_south <- run_pcb_analysis(
-  south_ace,
-  "PCB8",
-  "South"
+pcb8_south <- run_pcb_analysis(south_ace, "PCB8", "South")
+pcb8_south_w <- run_pcb_analysis(south_ace_w, "PCB8", "South_Wind")
+pcb8_hs <- run_pcb_analysis(hs_ace, "PCB8", "HS")
+pcb8_hs_w <- run_pcb_analysis(hs_ace_w, "PCB8", "HS_Wind")
+
+# PCB15
+pcb15_south <- run_pcb_analysis(south_ace, "PCB15", "South")
+pcb15_south_w <- run_pcb_analysis(south_ace_w, "PCB15", "South_Wind")
+pcb15_hs <- run_pcb_analysis(hs_ace, "PCB15", "HS")
+pcb15_hs_w <- run_pcb_analysis(hs_ace_w, "PCB15", "HS_Wind")
+
+# PCB18+30
+pcb18_south <- run_pcb_analysis(south_ace, "PCB18.30", "South")
+pcb18_south_w <- run_pcb_analysis(south_ace_w, "PCB18.30", "South_Wind")
+pcb18_hs <- run_pcb_analysis(hs_ace, "PCB18.30", "HS")
+pcb18_hs_w <- run_pcb_analysis(hs_ace_w, "PCB18.30", "HS_Wind")
+
+# PCB20+28
+pcb20_south <- run_pcb_analysis(south_ace, "PCB20.28", "South")
+pcb20_south_w <- run_pcb_analysis(south_ace_w, "PCB20.28", "South_Wind")
+pcb20_hs <- run_pcb_analysis(hs_ace, "PCB20.28", "HS")
+pcb20_hs_w <- run_pcb_analysis(hs_ace_w, "PCB20.28", "HS_Wind")
+
+# PCB31
+pcb31_south <- run_pcb_analysis(south_ace, "PCB31", "South")
+pcb31_south_w <- run_pcb_analysis(south_ace_w, "PCB31", "South_Wind")
+pcb31_hs <- run_pcb_analysis(hs_ace, "PCB31", "HS")
+pcb31_hs_w <- run_pcb_analysis(hs_ace_w, "PCB31", "HS_Wind")
+
+# Statistical analysis: Temporal ------------------------------------------
+m0 <- lm(
+  log10(PCB8) ~ Activity,
+  data = south_ace
 )
 
-pcb8_south_w <- run_pcb_analysis(
-  south_ace_w,
-  "PCB8",
-  "South_Wind"
+summary(m0)
+
+m1 <- lm(
+  log10(PCB8) ~
+    Activity +
+    invT +
+    wind_speed,
+  data = south_ace
 )
 
-pcb8_hs <- run_pcb_analysis(
-  hs_ace,
-  "PCB8",
-  "HS"
+# Intercept                = Idle (reference)
+# ActivityConstruction     = Construction - Idle
+# ActivityDredging         = Dredging - Idle
+
+
+summary(m1)
+
+south_ace$julian_day <-
+  as.numeric(format(south_ace$date, "%j"))
+
+z <- 2*pi/365.25
+
+south_ace$sin_season <- sin(z * south_ace$julian_day)
+south_ace$cos_season <- cos(z * south_ace$julian_day)
+
+m2 <- lm(
+  log10(PCB8) ~
+    Activity +
+    invT +
+    wind_speed +
+    sin_season +
+    cos_season,
+  data = south_ace
 )
 
-pcb8_hs_w <- run_pcb_analysis(
-  hs_ace_w,
-  "PCB8",
-  "HS_Wind"
+AIC(m1, m2)
+
+anova(m1, m2)
+
+summary(m2)$coefficients
+
+par(mfrow = c(2,2))
+plot(m2)
+
+library(emmeans)
+
+emmeans(m2, ~ Activity)
+
+pairs(
+  emmeans(m2, ~ Activity)
+)
+
+south_ace$upwind <-
+  south_ace$wind_direction >= 30 &
+  south_ace$wind_direction <= 120
+
+m3 <- lm(
+  log10(PCB8) ~
+    Activity * upwind +
+    invT +
+    wind_speed +
+    sin(z * julian_day) +
+    cos(z * julian_day),
+  data = south_ace
 )
 
 
