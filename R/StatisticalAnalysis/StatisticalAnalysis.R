@@ -9,7 +9,9 @@
 {
   install.packages("dplyr")
   install.packages("ggplot")
+  install.packages("tidyr")
   install.packages("car")
+  install.packages("rstatix")
 }
 
 # Upload libraries
@@ -19,6 +21,7 @@
   library(tidyr)
   library(car)
   library(rstatix)
+  library(emmeans)
 }
 
 # Read data ---------------------------------------------------------------
@@ -76,226 +79,166 @@ hs_ace <- subset(ace, location == "HS")
 # Filter by wind direction
 # Both sites are located in general southeast of dredging
 # Select only when wind is blowing into both sites
+# 0° for North, 90° for East, 180° for South, and 270° for West
 south_ace_w <- south_ace %>%
   filter(
     Activity != "Dredging" |
-      between(wind_direction, 30, 120))
+      between(wind_direction, 30, 90))
 
 hs_ace_w <- hs_ace %>%
   filter(
     Activity != "Dredging" |
-      between(wind_direction, 30, 120))
+      between(wind_direction, 0, 70))
 
 # Statistical analysis: Activities ----------------------------------------
-# Function
-run_pcb_analysis <- function(data, pcb, dataset_name) {
-  
-  # Output directory
-  output_dir <- file.path("Output/Data/Air/StatisticalAnalysis", pcb)
-  # Log transform
-  data$logPCB <- log10(data[[pcb]])
-  
-  # Assumption tests
-  shapiro_results <- by(
-    data$logPCB,
-    data$Activity,
-    shapiro.test)
-  
-  levene_results <- leveneTest(
-    logPCB ~ Activity,
-    data = data)
-  
-  # Classical ANOVA + Tukey
-  fit_aov <- aov(
-    logPCB ~ Activity,
-    data = data)
-  anova_results <- summary(fit_aov)
-  tukey_results <- TukeyHSD(fit_aov)
-  tukey_table <- as.data.frame(
-    tukey_results$Activity)
-  tukey_table$Comparison <- rownames(
-    tukey_table)
-  rownames(tukey_table) <- NULL
-  
-  # Welch ANOVA + Games-Howell
-  fit_welch <- oneway.test(
-    logPCB ~ Activity,
-    data = data,
-    var.equal = FALSE)
-  gh_results <- games_howell_test(
-    data,
-    logPCB ~ Activity)
-  gh_results$fold_change <- 10^(gh_results$estimate)
-  
-  # Kruskal-Wallis + Dunn
-  kw_results <- kruskal.test(
-    logPCB ~ Activity,
-    data = data)
-  dunn_results <- dunn_test(
-    data,
-    logPCB ~ Activity,
-    p.adjust.method = "holm")
-  
-  # Summary table
-  summary_table <- data.frame(
-    Dataset = dataset_name,
-    PCB = pcb,
-    
-    Levene_F = levene_results$`F value`[1],
-    Levene_p = levene_results$`Pr(>F)`[1],
-    
-    ANOVA_F = anova_results[[1]]$`F value`[1],
-    ANOVA_p = anova_results[[1]]$`Pr(>F)`[1],
-    
-    Welch_F = unname(fit_welch$statistic),
-    Welch_p = fit_welch$p.value,
-    
-    Kruskal_ChiSq = unname(kw_results$statistic),
-    Kruskal_p = kw_results$p.value)
-  
-  # Save outputs
-  write.csv(tukey_table,
-            file.path(output_dir,
-                      paste0("02_", dataset_name, "_Tukey.csv")),
-            row.names = FALSE)
-  write.csv(gh_results,
-            file.path(output_dir,
-                      paste0("03_", dataset_name, "_GamesHowell.csv")),
-            row.names = FALSE)
-  
-  write.csv(dunn_results,
-            file.path(output_dir,
-                      paste0("04_", dataset_name, "_Dunn.csv")),
-            row.names = FALSE)
-  
-  write.csv(summary_table,
-            file.path(output_dir,
-                      paste0("01_", dataset_name, "_Summary.csv")),
-            row.names = FALSE)
-  
-  # Return results
-  results <- list(
-    pcb = pcb,
-    dataset = dataset_name,
-    
-    shapiro = shapiro_results,
-    levene = levene_results,
-    
-    anova = fit_aov,
-    anova_summary = anova_results,
-    tukey = tukey_results,
-    
-    welch = fit_welch,
-    games_howell = gh_results,
-    
-    kruskal = kw_results,
-    dunn = dunn_results)
-  
-  return(results)
-}
-
-# PCB8
-pcb8_south <- run_pcb_analysis(south_ace, "PCB8", "South")
-pcb8_south_w <- run_pcb_analysis(south_ace_w, "PCB8", "South_Wind")
-pcb8_hs <- run_pcb_analysis(hs_ace, "PCB8", "HS")
-pcb8_hs_w <- run_pcb_analysis(hs_ace_w, "PCB8", "HS_Wind")
-
-# PCB15
-pcb15_south <- run_pcb_analysis(south_ace, "PCB15", "South")
-pcb15_south_w <- run_pcb_analysis(south_ace_w, "PCB15", "South_Wind")
-pcb15_hs <- run_pcb_analysis(hs_ace, "PCB15", "HS")
-pcb15_hs_w <- run_pcb_analysis(hs_ace_w, "PCB15", "HS_Wind")
-
-# PCB18+30
-pcb18_south <- run_pcb_analysis(south_ace, "PCB18.30", "South")
-pcb18_south_w <- run_pcb_analysis(south_ace_w, "PCB18.30", "South_Wind")
-pcb18_hs <- run_pcb_analysis(hs_ace, "PCB18.30", "HS")
-pcb18_hs_w <- run_pcb_analysis(hs_ace_w, "PCB18.30", "HS_Wind")
-
-# PCB20+28
-pcb20_south <- run_pcb_analysis(south_ace, "PCB20.28", "South")
-pcb20_south_w <- run_pcb_analysis(south_ace_w, "PCB20.28", "South_Wind")
-pcb20_hs <- run_pcb_analysis(hs_ace, "PCB20.28", "HS")
-pcb20_hs_w <- run_pcb_analysis(hs_ace_w, "PCB20.28", "HS_Wind")
-
-# PCB31
-pcb31_south <- run_pcb_analysis(south_ace, "PCB31", "South")
-pcb31_south_w <- run_pcb_analysis(south_ace_w, "PCB31", "South_Wind")
-pcb31_hs <- run_pcb_analysis(hs_ace, "PCB31", "HS")
-pcb31_hs_w <- run_pcb_analysis(hs_ace_w, "PCB31", "HS_Wind")
-
-# Statistical analysis: Temporal ------------------------------------------
-m0 <- lm(
-  log10(PCB8) ~ Activity,
-  data = south_ace
-)
-
-summary(m0)
-
-m1 <- lm(
-  log10(PCB8) ~
-    Activity +
-    invT +
-    wind_speed,
-  data = south_ace
-)
-
-# Intercept                = Idle (reference)
-# ActivityConstruction     = Construction - Idle
-# ActivityDredging         = Dredging - Idle
-
-
-summary(m1)
-
-south_ace$julian_day <-
-  as.numeric(format(south_ace$date, "%j"))
+# H1: Airborne PCB concentrations differ among dredging, construction,
+# and idle periods at the South site.
+south_ace$julian_day <- as.numeric(format(south_ace$date, "%j"))
 
 z <- 2*pi/365.25
 
 south_ace$sin_season <- sin(z * south_ace$julian_day)
 south_ace$cos_season <- cos(z * south_ace$julian_day)
 
-m2 <- lm(
-  log10(PCB8) ~
-    Activity +
-    invT +
-    wind_speed +
-    sin_season +
-    cos_season,
-  data = south_ace
+# PCB8
+fit.pcb8.s <- lm(log10(PCB8) ~ Activity + invT + wind_speed + sin_season +
+                 cos_season, data = south_ace)
+
+car::Anova(fit.pcb8.s, type = 2)
+
+emmeans(fit.pcb8.s, ~ Activity)
+
+pairs(emmeans(fit.pcb8.s, ~ Activity))
+
+
+# PCB 15
+fit.pcb15.s <- lm(log10(PCB15) ~ Activity + invT + wind_speed + sin_season +
+                   cos_season, data = south_ace)
+
+car::Anova(fit.pcb15.s, type = 2)
+
+emmeans(fit.pcb15.s, ~ Activity)
+
+pairs(emmeans(fit.pcb15.s, ~ Activity))
+
+# PCB 18+30
+fit.pcb18.s <- lm(log10(PCB18.30) ~ Activity + invT + wind_speed + sin_season +
+                    cos_season, data = south_ace)
+
+car::Anova(fit.pcb18.s, type = 2)
+
+emmeans(fit.pcb18.s, ~ Activity)
+
+pairs(emmeans(fit.pcb18.s, ~ Activity))
+
+# PCB 20+28
+fit.pcb20.s <- lm(log10(PCB20.28) ~ Activity + invT + wind_speed + sin_season +
+                    cos_season, data = south_ace)
+
+car::Anova(fit.pcb20.s, type = 2)
+
+emmeans(fit.pcb20.s, ~ Activity)
+
+pairs(emmeans(fit.pcb20.s, ~ Activity))
+
+# PCB 31
+fit.pcb31.s <- lm(log10(PCB31) ~ Activity + invT + wind_speed + sin_season +
+                    cos_season, data = south_ace)
+
+car::Anova(fit.pcb31.s, type = 2)
+
+emmeans(fit.pcb31.s, ~ Activity)
+
+pairs(emmeans(fit.pcb31.s, ~ Activity))
+
+# Summary
+south_h1_summary <- data.frame(
+  Congener = c("PCB8", "PCB15", "PCB18.30", "PCB20.28", "PCB31"),
+  F_TypeII = c(11.29, 45.64, 56.25, 62.91, 53.02),
+  P_Value = c("<0.001", "<0.001", "<0.001", "<0.001", "<0.001"),
+  Pattern = c(
+    "D > C ≈ I",
+    "D > I > C",
+    "D > I > C",
+    "D > I > C",
+    "D > I > C"
+  ),
+  Idle_vs_Construction_pct = c(NA, 18, 29, 24, 22),
+  Dredging_vs_Idle_pct = c(48, 67, 118, 107, 101),
+  Dredging_vs_Construction_pct = c(39, 96, 181, 157, 145)
 )
 
-AIC(m1, m2)
+south_h1_summary
 
-anova(m1, m2)
+# HS
+hs_ace$julian_day <- as.numeric(format(hs_ace$date, "%j"))
 
-summary(m2)$coefficients
+z <- 2*pi/365.25
 
-par(mfrow = c(2,2))
-plot(m2)
+hs_ace$sin_season <- sin(z * hs_ace$julian_day)
+hs_ace$cos_season <- cos(z * hs_ace$julian_day)
 
-library(emmeans)
+# PCB8
+fit.pcb8.hs <- lm(log10(PCB8) ~ Activity + invT + wind_speed + sin_season +
+                   cos_season, data = hs_ace)
 
-emmeans(m2, ~ Activity)
+car::Anova(fit.pcb8.hs, type = 2)
 
-pairs(
-  emmeans(m2, ~ Activity)
+emmeans(fit.pcb8.hs, ~ Activity)
+
+pairs(emmeans(fit.pcb8.hs, ~ Activity))
+
+# PCB15
+fit.pcb15.hs <- lm(log10(PCB15) ~ Activity + invT + wind_speed + sin_season +
+                    cos_season, data = hs_ace)
+
+car::Anova(fit.pcb15.hs, type = 2)
+
+emmeans(fit.pcb15.hs, ~ Activity)
+
+pairs(emmeans(fit.pcb15.hs, ~ Activity))
+
+# PCB18+30
+fit.pcb18.hs <- lm(log10(PCB18.30) ~ Activity + invT + wind_speed + sin_season +
+                    cos_season, data = hs_ace)
+
+car::Anova(fit.pcb18.hs, type = 2)
+
+emmeans(fit.pcb18.hs, ~ Activity)
+
+pairs(emmeans(fit.pcb18.hs, ~ Activity))
+
+# PCB20+28
+fit.pcb20.hs <- lm(log10(PCB20.28) ~ Activity + invT + wind_speed + sin_season +
+                    cos_season, data = hs_ace)
+
+car::Anova(fit.pcb20.hs, type = 2)
+
+emmeans(fit.pcb20.hs, ~ Activity)
+
+pairs(emmeans(fit.pcb20.hs, ~ Activity))
+
+# PCB31
+fit.pcb31.hs <- lm(log10(PCB31) ~ Activity + invT + wind_speed + sin_season +
+                    cos_season, data = hs_ace)
+
+car::Anova(fit.pcb31.hs, type = 2)
+
+emmeans(fit.pcb31.hs, ~ Activity)
+
+pairs(emmeans(fit.pcb31.hs, ~ Activity))
+
+hs_h1_summary <- data.frame(
+  Congener = c("PCB8", "PCB15", "PCB18.30", "PCB20.28", "PCB31"),
+  F_TypeII = c(32.05, 3.61, 0.70, 0.11, 2.27),
+  P_Value = c("<0.001", "0.027", "0.495", "0.895", "0.104"),
+  Pattern = c(
+    "Construction > Idle > Dredging",
+    "Construction ≈ Idle > Dredging",
+    "No Activity Effect",
+    "No Activity Effect",
+    "No Activity Effect"
+  )
 )
 
-south_ace$upwind <-
-  south_ace$wind_direction >= 30 &
-  south_ace$wind_direction <= 120
-
-m3 <- lm(
-  log10(PCB8) ~
-    Activity * upwind +
-    invT +
-    wind_speed +
-    sin(z * julian_day) +
-    cos(z * julian_day),
-  data = south_ace
-)
-
-
-
-
+hs_h1_summary
