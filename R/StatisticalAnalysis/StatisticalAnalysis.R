@@ -71,19 +71,13 @@ hs_ace <- subset(ace, location == "HS")
 z <- 2 * pi / 365.25
 
 # South
-
 south_ace$julian_day <- as.numeric(format(south_ace$date, "%j"))
-
 south_ace$sin_season <- sin(z * south_ace$julian_day)
-
 south_ace$cos_season <- cos(z * south_ace$julian_day)
 
 # HS
-
 hs_ace$julian_day <- as.numeric(format(hs_ace$date, "%j"))
-
 hs_ace$sin_season <- sin(z * hs_ace$julian_day)
-
 hs_ace$cos_season <- cos(z * hs_ace$julian_day)
 
 # SourceWind --------------------------------------------------------------
@@ -111,7 +105,6 @@ run_activity_model <- function(data, pcb_var){
 }
 
 # South
-
 south_pcb8  <- run_activity_model(south_ace, "PCB8")
 south_pcb15 <- run_activity_model(south_ace, "PCB15")
 south_pcb18 <- run_activity_model(south_ace, "PCB18.30")
@@ -119,7 +112,6 @@ south_pcb20 <- run_activity_model(south_ace, "PCB20.28")
 south_pcb31 <- run_activity_model(south_ace, "PCB31")
 
 # HS
-
 hs_pcb8  <- run_activity_model(hs_ace, "PCB8")
 hs_pcb15 <- run_activity_model(hs_ace, "PCB15")
 hs_pcb18 <- run_activity_model(hs_ace, "PCB18.30")
@@ -142,7 +134,6 @@ south_ace$Exposure_d1 <- 0
 hs_ace$Exposure_d1 <- 0
 
 # South
-
 for(i in seq_len(nrow(south_ace))) {
   
   d <- south_ace$date[i]
@@ -160,7 +151,6 @@ for(i in seq_len(nrow(south_ace))) {
 }
 
 # HS
-
 for(i in seq_len(nrow(hs_ace))) {
   
   d <- hs_ace$date[i]
@@ -189,7 +179,6 @@ run_exposure_model <- function(data, pcb_var){
 }
 
 # South
-
 south_exp8  <- run_exposure_model(south_ace, "PCB8")
 south_exp15 <- run_exposure_model(south_ace, "PCB15")
 south_exp18 <- run_exposure_model(south_ace, "PCB18.30")
@@ -197,7 +186,6 @@ south_exp20 <- run_exposure_model(south_ace, "PCB20.28")
 south_exp31 <- run_exposure_model(south_ace, "PCB31")
 
 # HS
-
 hs_exp8  <- run_exposure_model(hs_ace, "PCB8")
 hs_exp15 <- run_exposure_model(hs_ace, "PCB15")
 hs_exp18 <- run_exposure_model(hs_ace, "PCB18.30")
@@ -271,7 +259,6 @@ south_ace$MinDist_Dredge <- NA_real_
 hs_ace$MinDist_Dredge <- NA_real_
 
 # South
-
 for(i in seq_len(nrow(south_ace))) {
   
   d <- south_ace$date[i]
@@ -296,7 +283,6 @@ for(i in seq_len(nrow(south_ace))) {
 }
 
 # HS
-
 for(i in seq_len(nrow(hs_ace))) {
   
   d <- hs_ace$date[i]
@@ -321,7 +307,6 @@ for(i in seq_len(nrow(hs_ace))) {
 }
 
 # Safety check
-
 south_ace$MinDist_Dredge[
   is.infinite(south_ace$MinDist_Dredge)
 ] <- NA
@@ -331,7 +316,6 @@ hs_ace$MinDist_Dredge[
 ] <- NA
 
 # Check
-
 summary(south_ace$MinDist_Dredge)
 
 summary(hs_ace$MinDist_Dredge)
@@ -354,7 +338,6 @@ run_distance_model <- function(data, pcb_var){
 }
 
 # South
-
 south_dist8 <- run_distance_model(south_ace, "PCB8")
 south_dist15 <- run_distance_model(south_ace, "PCB15")
 south_dist18 <- run_distance_model(south_ace, "PCB18.30")
@@ -362,7 +345,6 @@ south_dist20 <- run_distance_model(south_ace, "PCB20.28")
 south_dist31 <- run_distance_model(south_ace, "PCB31")
 
 # HS
-
 hs_dist8 <- run_distance_model(hs_ace, "PCB8")
 hs_dist15 <- run_distance_model(hs_ace, "PCB15")
 hs_dist18 <- run_distance_model(hs_ace, "PCB18.30")
@@ -427,3 +409,29 @@ hs_distance_summary <- data.frame(
 south_distance_summary
 
 hs_distance_summary
+
+# plots
+ggplot(
+  subset(
+    south_ace,
+    !is.na(SourceWind)
+  ),
+  aes(
+    SourceWind,
+    log10(PCB31)
+  )
+) +
+  geom_boxplot()
+
+ggplot(
+  subset(
+    south_ace,
+    !is.na(SourceWind)
+  ),
+  aes(
+    Activity,
+    log10(PCB31)
+  )
+) +
+  geom_boxplot()
+
