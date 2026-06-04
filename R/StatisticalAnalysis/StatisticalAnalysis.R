@@ -27,6 +27,7 @@ ace <- ace.raw %>%
 
 ace <- ace[, 1:7]
 
+# From ng to pg
 ace <- ace %>%
   mutate(across(starts_with("PCB"), ~ . / 1000))
 
