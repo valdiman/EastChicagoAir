@@ -128,6 +128,12 @@ prep_daily <- function(df) {
 daily_airport1 <- prep_daily(weather1)
 daily_airport2 <- prep_daily(weather2)
 
+# Save for Mike
+write.csv(daily_airport1, "Data/Mike/MeteorologyChicagoMidway2023.csv",
+          row.names = FALSE)
+write.csv(daily_airport2, "Data/Mike/MeteorologyGaryAirport2023.csv",
+          row.names = FALSE)
+
 # Comparison datasets -----------------------------------------------------
 build_comparison <- function(airport_daily,
                              airtemp_ihsc,
@@ -327,7 +333,7 @@ ggplot(
   facet_wrap(~ airport) +
   labs(
     x = "Airport Wind Direction (°)",
-    y = "IHSC Wind Direction (wrapped, °)",
+    y = "IHSC Wind Direction",
     title = "Wind Direction Comparison") +
   theme_minimal()
 
