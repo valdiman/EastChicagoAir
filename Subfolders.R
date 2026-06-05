@@ -30,6 +30,7 @@ dir.create("Data/Mike")
 dir.create("Data/Meteorology")
 dir.create("Data/PCProperties")
 dir.create("Data/RemediationProject")
+dir.create("Data/USGS")
 
 dir.create("Output")
 dir.create("Output/Data")

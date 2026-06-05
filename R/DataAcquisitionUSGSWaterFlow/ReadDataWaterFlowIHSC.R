@@ -78,14 +78,17 @@ flow_complete <- all_days %>%
       flow_cfs,
       fromLast = TRUE))
 
-ace <- ace %>%
-  left_join(flow_complete, by = c("date" = "time"))
+flow_ihsc <- ace %>%
+  select(date) %>%
+  left_join(
+    flow_complete,
+    by = c("date" = "time")
+  ) %>%
+  transmute(
+    date,
+    flow_cfs = flow_cfs,
+    flow_abs = abs(flow_cfs),
+    log_flow = log10(abs(flow_cfs)))
 
-ace <- ace %>%
-  mutate(log_flow = log10(flow_cfs))
-
-
-
-
-# save
-write.csv(fx, "Data/FoxRiver/FoxRiver_temp.csv", row.names = FALSE)
+# Save
+write.csv(flow_ihsc, "Data/USGS/flow_ihsc.csv", row.names = FALSE)

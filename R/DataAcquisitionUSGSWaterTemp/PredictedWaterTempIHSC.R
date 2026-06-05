@@ -1,4 +1,3 @@
-# ============================================================
 # Reconstruct Water Temperature for ACE Dataset
 # Indiana Harbor Canal, East Chicago, IN
 #
@@ -14,12 +13,19 @@
 # R²   = 0.963
 # RMSE = 1.35 °C
 # MAE  = 1.07 °C
-# ============================================================
 
-# ------------------------------------------------------------
-# Packages
-# ------------------------------------------------------------
+# Packages and libraries needed -------------------------------------------------------------------
+# Install packages
+{
+  install.packages("dataRetrieval")
+  install.packages("dplyr")
+  install.packages("sf")
+  install.packages("daymetr")
+  install.packages("tidyr")
+  install.packages("lubridate")
+}
 
+# Library
 {
   library(dataRetrieval)
   library(dplyr)
@@ -29,18 +35,14 @@
   library(lubridate)
 }
 
-# ------------------------------------------------------------
-# Helper function
-# ------------------------------------------------------------
-
+# Helper function ---------------------------------------------------------
 find_single_col <- function(df, pattern, what = "column") {
   
   matches <- grep(
     pattern,
     names(df),
     ignore.case = TRUE,
-    value = TRUE
-  )
+    value = TRUE)
   
   if(length(matches) == 0) {
     stop(
@@ -49,8 +51,7 @@ find_single_col <- function(df, pattern, what = "column") {
         what,
         pattern
       ),
-      call. = FALSE
-    )
+      call. = FALSE)
   }
   
   if(length(matches) > 1) {
@@ -68,10 +69,7 @@ find_single_col <- function(df, pattern, what = "column") {
   matches
 }
 
-# ------------------------------------------------------------
-# Read ACE data
-# ------------------------------------------------------------
-
+# Read ACE data -----------------------------------------------------------
 ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
 
 ace <- ace.raw %>%
@@ -79,10 +77,7 @@ ace <- ace.raw %>%
 
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
 
-# ------------------------------------------------------------
-# Download USGS water temperature
-# ------------------------------------------------------------
-
+# Download USGS water temperature -----------------------------------------
 site.ihsc <- "04092750"
 
 temp <- read_waterdata_daily(
@@ -105,10 +100,7 @@ ace <- ace %>%
   left_join(temp_values, by = c("date" = "time")) %>%
   rename(temp = value)
 
-# ------------------------------------------------------------
-# Download Daymet air temperature
-# ------------------------------------------------------------
-
+# Download Daymet air temperature -----------------------------------------
 lat <- 41.652821
 lon <- -87.462739
 
@@ -155,10 +147,7 @@ air <- wide_act %>%
   ) %>%
   select(date, doy, tair)
 
-# ------------------------------------------------------------
-# Build calibration dataset
-# ------------------------------------------------------------
-
+# Build calibration dataset -----------------------------------------------
 ace_cal <- ace %>%
   left_join(
     air %>% select(date, tair),
@@ -174,18 +163,12 @@ cal <- ace_cal %>%
     sin_doy = sin(2*pi*doy/365.25),
     cos_doy = cos(2*pi*doy/365.25))
 
-# ------------------------------------------------------------
-# Calibrated water temperature model
-# ------------------------------------------------------------
-
+# Calibrated water temperature model --------------------------------------
 fit <- lm(temp ~ tair + sin_doy + cos_doy, data = cal)
 
 summary(fit)
 
-# ------------------------------------------------------------
-# Predict water temperature for all dates
-# ------------------------------------------------------------
-
+# Predict water temperature for all dates ---------------------------------
 all_dates <- air %>%
   mutate(
     sin_doy = sin(2*pi*doy/365.25),
@@ -193,44 +176,26 @@ all_dates <- air %>%
 
 all_dates$pred_water <- predict(fit, newdata = all_dates)
 
-# ------------------------------------------------------------
-# Merge predictions back to ACE
-# ------------------------------------------------------------
-
-ace_final <- ace %>%
+# Create final data frame -------------------------------------------------
+tempwater_ihsc <- ace %>%
   left_join(
     all_dates %>%
       select(date, pred_water),
     by = "date"
   ) %>%
-  mutate(
-    water_temp =
-      coalesce(
-        temp,
-        pred_water)
-  ) %>%
-  select(
-    -temp,
-    -pred_water)
+  transmute(
+    date,
+    water_temp = coalesce(temp, pred_water))
 
-# ------------------------------------------------------------
-# Model diagnostics
-# ------------------------------------------------------------
-
+# Model diagnostics -------------------------------------------------------
 cal$pred <- predict(fit, newdata = cal)
-
 rmse <- sqrt(mean((cal$temp - cal$pred)^2))
-
 mae <- mean(abs(cal$temp - cal$pred))
 
 cat("R²   =", summary(fit)$r.squared, "\n")
 cat("RMSE =", rmse, "\n")
 cat("MAE  =", mae, "\n")
 
-# ------------------------------------------------------------
-# Save
-# ------------------------------------------------------------
-
-write.csv(ace_final, "Data/Air/EastChicago/ACE/ACEData_withWaterTemp.csv",
-          row.names = FALSE)
+# Save --------------------------------------------------------------------
+write.csv(tempwater_ihsc, "Data/USGS/tempwater_ihsc.csv", row.names = FALSE)
 
