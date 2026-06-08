@@ -16,6 +16,7 @@ dir.create("R/ParPreCalculations")
 dir.create("R/StatisticalAnalysis")
 
 dir.create("Data")
+dir.create("Data/ACE")
 dir.create("Data/Air")
 dir.create("Data/Air/EastChicago")
 dir.create("Data/Air/EastChicago/ACE")

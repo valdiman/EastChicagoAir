@@ -39,56 +39,20 @@ flow <- read_waterdata_daily(
 # Clean USGS data
 flow_values <- flow %>%
   st_drop_geometry() %>%
-  select(time, value) %>%
-  group_by(time) %>%
-  summarize(
-    flow_cfs = mean(value, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-all_days <- tibble(
-  time = seq(
-    from = min(flow_values$time),
-    to   = max(flow_values$time),
-    by   = "day"
-  )
-)
-
-flow_complete <- all_days %>%
-  left_join(
-    flow_values,
-    by = "time"
-  ) %>%
-  arrange(time) %>%
-  mutate(
-    flow_cfs = zoo::na.approx(
-      flow_cfs,
-      x = time,
-      na.rm = FALSE
-    )
-  ) %>%
-  mutate(
-    flow_cfs = zoo::na.locf(
-      flow_cfs,
-      na.rm = FALSE
-    )
-  ) %>%
-  mutate(
-    flow_cfs = zoo::na.locf(
-      flow_cfs,
-      fromLast = TRUE))
+  select(time, flow_cfs = value)
 
 flow_ihsc <- ace %>%
   select(date) %>%
   left_join(
-    flow_complete,
+    flow_values,
     by = c("date" = "time")
   ) %>%
   transmute(
     date,
-    flow_cfs = flow_cfs,
-    flow_abs = abs(flow_cfs),
-    log_flow = log10(abs(flow_cfs)))
+    flow_cfs,
+    flow_abs = abs(flow_cfs), # Negative values meaning contrary flow direction
+    log_flow = log10(abs(flow_cfs))
+  )
 
 # Save
 write.csv(flow_ihsc, "Data/USGS/flow_ihsc.csv", row.names = FALSE)

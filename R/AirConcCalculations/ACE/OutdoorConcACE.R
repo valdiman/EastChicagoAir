@@ -54,7 +54,8 @@ ace$location2 <- ifelse(grepl("South", ace$location), "South", "HS")
 ace$location2 <- factor(ace$location2)
 
 # Read activity data ------------------------------------------------------
-act.data <- read.csv("Data/RemediationProject/activities_distance.csv")
+# Revised data
+act.data <- read.csv("Data/RemediationProject/activities_distanceV2.csv")
 
 # Clean activity data
 activities_clean <- act.data %>%
@@ -88,7 +89,7 @@ activity_daily <- all_dates %>%
   mutate(Activity = map_chr(date, get_activity, df = activities_clean))
 
 # Export data
-write.csv(activity_daily, "Data/RemediationProject/activity_daily.csv",
+write.csv(activity_daily, "Data/RemediationProject/activity_dailyV2.csv",
           row.names = FALSE)
 
 # Plot
@@ -122,7 +123,7 @@ p.pcb8 <- ggplot(ace, aes(x = date, y = PCB8)) +
 p.pcb8
 
 # Save plot in folder
-ggsave("Output/Plots/Concentrations/AcePCB8_CDF_HS.png", plot = p.pcb8,
+ggsave("Output/Plots/Concentrations/AcePCB8_CDF_HSV2.png", plot = p.pcb8,
        width = 12, height = 4, dpi = 500)
 
 # PCB 15
@@ -156,7 +157,7 @@ p.pcb15 <- ggplot(ace, aes(x = date, y = PCB15)) +
 p.pcb15
 
 # Save plot in folder
-ggsave("Output/Plots/Concentrations/AcePCB15_CDF_HS.png", plot = p.pcb15, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB15_CDF_HSV2.png", plot = p.pcb15, width = 12,
        height = 4, dpi = 500)
 
 # PCB 18+30
@@ -190,7 +191,7 @@ p.pcb18 <- ggplot(ace, aes(x = date, y = PCB18.30)) +
 p.pcb18
 
 # Save plot in folder
-ggsave("Output/Plots/Concentrations/AcePCB18_CDF_HS.png", plot = p.pcb18,
+ggsave("Output/Plots/Concentrations/AcePCB18_CDF_HSV2.png", plot = p.pcb18,
        width = 12, height = 4, dpi = 500)
 
 # PCB 20+28
@@ -224,7 +225,7 @@ p.pcb20 <- ggplot(ace, aes(x = date, y = PCB20.28)) +
 p.pcb20
 
 # Save plot in folder
-ggsave("Output/Plots/Concentrations/AcePCB20_CDF_HS.png", plot = p.pcb20,
+ggsave("Output/Plots/Concentrations/AcePCB20_CDF_HSV2.png", plot = p.pcb20,
        width = 12, height = 4, dpi = 500)
 
 # PCB 31
@@ -258,7 +259,7 @@ p.pcb31 <- ggplot(ace, aes(x = date, y = PCB31)) +
 p.pcb31
 
 # Save plot in folder
-ggsave("Output/Plots/Concentrations/AcePCB31_CDF_HS.png", plot = p.pcb31,
+ggsave("Output/Plots/Concentrations/AcePCB31_CDF_HSV2.png", plot = p.pcb31,
        width = 12, height = 4, dpi = 500)
 
 # Individual sites --------------------------------------------------------
@@ -295,7 +296,7 @@ p.pcb8 <- ggplot(subset(ace, location2 == "South"),
 p.pcb8  
 
 # Export plot
-ggsave("Output/Plots/Concentrations/AcePCB8_CDF.png", plot = p.pcb8, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB8_CDFV2.png", plot = p.pcb8, width = 12,
        height = 4, dpi = 500)
 
 # PCB 15
@@ -330,7 +331,7 @@ p.pcb15 <- ggplot(subset(ace, location2 == "South"),
 p.pcb15
 
 # Export plot
-ggsave("Output/Plots/Concentrations/AcePCB15_CDF.png", plot = p.pcb15, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB15_CDFV2.png", plot = p.pcb15, width = 12,
        height = 4, dpi = 500)
 
 # PCB 18+30
@@ -365,7 +366,7 @@ p.pcb18 <- ggplot(subset(ace, location2 == "South"),
 p.pcb18
 
 # Export plot
-ggsave("Output/Plots/Concentrations/AcePCB18_CDF.png", plot = p.pcb18, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB18_CDFV2.png", plot = p.pcb18, width = 12,
        height = 4, dpi = 500)
 
 # PCB 20+28
@@ -400,7 +401,7 @@ p.pcb20 <- ggplot(subset(ace, location2 == "South"),
 p.pcb20
 
 # Export plot
-ggsave("Output/Plots/Concentrations/AcePCB20_CDF.png", plot = p.pcb20, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB20_CDFV2.png", plot = p.pcb20, width = 12,
        height = 4, dpi = 500)
 
 # PCB 31
@@ -435,7 +436,7 @@ p.pcb31 <- ggplot(subset(ace, location2 == "South"),
 p.pcb31
 
 # Export plot
-ggsave("Output/Plots/Concentrations/AcePCB31_CDF.png", plot = p.pcb31, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB31_CDFV2.png", plot = p.pcb31, width = 12,
        height = 4, dpi = 500)
 
 # HS
@@ -469,7 +470,7 @@ p.pcb8 <- ggplot(subset(ace, location2 == "HS"),
 # See plot
 p.pcb8
 
-ggsave("Output/Plots/Concentrations/AcePCB8_HS.png", plot = p.pcb8, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB8_HSV2.png", plot = p.pcb8, width = 12,
        height = 4, dpi = 500)
 
 # PCB 15
@@ -503,7 +504,7 @@ p.pcb15 <- ggplot(subset(ace, location2 == "HS"),
 # See plot
 p.pcb15
 
-ggsave("Output/Plots/Concentrations/AcePCB15_HS.png", plot = p.pcb15, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB15_HSV2.png", plot = p.pcb15, width = 12,
        height = 4, dpi = 500)
 
 # PCB 18
@@ -537,7 +538,7 @@ p.pcb18 <- ggplot(subset(ace, location2 == "HS"),
 # See plot
 p.pcb18
 
-ggsave("Output/Plots/Concentrations/AcePCB18_HS.png", plot = p.pcb18, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB18_HSV2.png", plot = p.pcb18, width = 12,
        height = 4, dpi = 500)
 
 # PCB20.28
@@ -571,7 +572,7 @@ p.pcb20 <- ggplot(subset(ace, location2 == "HS"),
 # See plot
 p.pcb20
 
-ggsave("Output/Plots/Concentrations/AcePCB20_HS.png", plot = p.pcb20, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB20_HSV2.png", plot = p.pcb20, width = 12,
        height = 4, dpi = 500)
 
 # PCB 31
@@ -605,7 +606,7 @@ p.pcb31 <- ggplot(subset(ace, location2 == "HS"),
 # See plot
 p.pcb31
 
-ggsave("Output/Plots/Concentrations/AcePCB31_HS.png", plot = p.pcb31, width = 12,
+ggsave("Output/Plots/Concentrations/AcePCB31_HSV2.png", plot = p.pcb31, width = 12,
        height = 4, dpi = 500)
 
 
