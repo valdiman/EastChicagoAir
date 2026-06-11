@@ -46,7 +46,7 @@ meteo.data <- meteo.data %>%
 meteo_unique <- meteo.data[!duplicated(meteo.data$date), ]
 
 # Activity data -----------------------------------------------------------
-activity_daily <- read.csv("Data/RemediationProject/activity_daily.csv")
+activity_daily <- read.csv("Data/RemediationProject/activity_dailyV2.csv")
 
 activity_daily$date <- as.Date(activity_daily$date)
 
