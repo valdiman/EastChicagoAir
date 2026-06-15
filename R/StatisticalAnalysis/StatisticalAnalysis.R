@@ -47,37 +47,41 @@ meteo_unique <- meteo.data[!duplicated(meteo.data$date), ]
 
 # Activity data -----------------------------------------------------------
 activity_daily <- read.csv("Data/RemediationProject/activity_dailyV2.csv")
-
 activity_daily$date <- as.Date(activity_daily$date)
-
 activity_daily$Activity <- factor(activity_daily$Activity)
 
 # Water data --------------------------------------------------------------
 water_flow <- read.csv("Data/USGS/flow_ihsc.csv")
 water_flow$date <- as.Date(water_flow$date)
+# Remove duplicates
+water_flow_unique <- water_flow[!duplicated(water_flow$date), ]
 
 water_temp <- read.csv("Data/USGS/tempwater_ihsc.csv")
 water_temp$date <- as.Date(water_temp$date)
+# Remove duplicates
+water_temp_unique <- water_temp[!duplicated(water_temp$date), ]
 
 water_turb <- read.csv("Data/USGS/turb_ihsc.csv")
 water_turb$date <- as.Date(water_turb$date)
+# Remove duplicates
+water_turb_unique <- water_turb[!duplicated(water_turb$date), ]
 
 # Merge datasets ----------------------------------------------------------
 ace <- ace %>%
   left_join(
     meteo_unique, by = "date"
-  ) %>%
-  left_join(
-    activity_daily, by = "date"
     ) %>%
   left_join(
-    water_flow, by = "date"
+    water_flow_unique, by = "date"
     ) %>%
   left_join(
-    water_temp, by = "date"
-  ) %>%
+    water_temp_unique, by = "date"
+    ) %>%
   left_join(
-    water_turb, by = "date")
+    water_turb_unique, by = "date"
+    ) %>%
+  left_join(
+    activity_daily, by = "date")
 
 ace$Activity <-
   relevel(ace$Activity, ref = "Idle")
@@ -111,349 +115,272 @@ hs_ace$SourceWind <- factor(
     between(hs_ace$wind_direction, 0, 70), "Source", "NonSource"),
   levels = c("NonSource", "Source"))
 
-# Activity + SourceWind model ---------------------------------------------
+# Common environmental covariates
+covars <- paste(
+  "invT",
+  "wind_speed",
+  "sin_season",
+  "cos_season",
+  "flow_abs",
+  "water_temp",
+  sep = " + ")
+
+# Activity model
 run_activity_model <- function(data, pcb_var){
   
-  formula_txt <- paste0("log10(", pcb_var, ") ~ Activity + SourceWind + ",
-                        "invT + wind_speed + ", "sin_season + cos_season +",
-                        "flow_abs + water_temp + turb_FNU")
-  
-  fit <- lm(as.formula(formula_txt), data = data)
-  
-  list(model = fit, anova = car::Anova(fit, type = 2),
-       activity = emmeans(fit, pairwise ~ Activity),
-       sourcewind = emmeans(fit, pairwise ~ SourceWind))
-}
-
-# South
-south_pcb8  <- run_activity_model(south_ace, "PCB8")
-south_pcb15 <- run_activity_model(south_ace, "PCB15")
-south_pcb18 <- run_activity_model(south_ace, "PCB18.30")
-south_pcb20 <- run_activity_model(south_ace, "PCB20.28")
-south_pcb31 <- run_activity_model(south_ace, "PCB31")
-
-# HS
-hs_pcb8  <- run_activity_model(hs_ace, "PCB8")
-hs_pcb15 <- run_activity_model(hs_ace, "PCB15")
-hs_pcb18 <- run_activity_model(hs_ace, "PCB18.30")
-hs_pcb20 <- run_activity_model(hs_ace, "PCB20.28")
-hs_pcb31 <- run_activity_model(hs_ace, "PCB31")
-
-# Dredging inventory ------------------------------------------------------
-# needs to fix the dredge_inventory file
-dredge_inventory <- read.csv("Data/RemediationProject/dredge_inventory.csv")
-
-dredge_inventory$DateStart <- as.Date(dredge_inventory$DateStart,
-                                      format = "%m/%d/%Y")
-
-dredge_inventory$DateEnd <- as.Date(dredge_inventory$DateEnd,
-                                    format = "%m/%d/%Y")
-
-# Exposure_d1 -------------------------------------------------------------
-# Sum(Volume / Distance)
-
-south_ace$Exposure_d1 <- 0
-hs_ace$Exposure_d1 <- 0
-
-# South
-for(i in seq_len(nrow(south_ace))) {
-  
-  d <- south_ace$date[i]
-  
-  active <- dredge_inventory[
-    dredge_inventory$DateStart <= d &
-      dredge_inventory$DateEnd >= d,
-  ]
-  
-  if(nrow(active) > 0){
-    
-    south_ace$Exposure_d1[i] <- sum(active$Volume_yd3 / active$Dista_South_m,
-                                    na.rm = TRUE)
-  }
-}
-
-# HS
-for(i in seq_len(nrow(hs_ace))) {
-  
-  d <- hs_ace$date[i]
-  
-  active <- dredge_inventory[
-    dredge_inventory$DateStart <= d &
-      dredge_inventory$DateEnd >= d,
-  ]
-  
-  if(nrow(active) > 0){
-    
-    hs_ace$Exposure_d1[i] <- sum(active$Volume_yd3 / active$Dista_HS_m,
-                                 na.rm = TRUE)
-  }
-}
-
-# Exposure_d1 + SourceWind model ------------------------------------------
-run_exposure_model <- function(data, pcb_var){
-  
-  formula_txt <- paste0("log10(", pcb_var, ") ~ Exposure_d1 + SourceWind + ",
-                        "invT + wind_speed + ", "sin_season + cos_season")
-  
-  fit <- lm(as.formula(formula_txt), data = data)
-  
-  list(model = fit, anova = car::Anova(fit, type = 2), summary = summary(fit))
-}
-
-# South
-south_exp8  <- run_exposure_model(south_ace, "PCB8")
-south_exp15 <- run_exposure_model(south_ace, "PCB15")
-south_exp18 <- run_exposure_model(south_ace, "PCB18.30")
-south_exp20 <- run_exposure_model(south_ace, "PCB20.28")
-south_exp31 <- run_exposure_model(south_ace, "PCB31")
-
-# HS
-hs_exp8  <- run_exposure_model(hs_ace, "PCB8")
-hs_exp15 <- run_exposure_model(hs_ace, "PCB15")
-hs_exp18 <- run_exposure_model(hs_ace, "PCB18.30")
-hs_exp20 <- run_exposure_model(hs_ace, "PCB20.28")
-hs_exp31 <- run_exposure_model(hs_ace, "PCB31")
-
-# Activity + SourceWind summary -------------------------------------------
-south_activity_summary <- data.frame(
-  Congener = c("PCB8", "PCB15", "PCB18.30", "PCB20.28", "PCB31"),
-  Activity_F = c(
-    south_pcb8$anova["Activity", "F value"],
-    south_pcb15$anova["Activity", "F value"],
-    south_pcb18$anova["Activity", "F value"],
-    south_pcb20$anova["Activity", "F value"],
-    south_pcb31$anova["Activity", "F value"]),
-  SourceWind_F = c(
-    south_pcb8$anova["SourceWind", "F value"],
-    south_pcb15$anova["SourceWind", "F value"],
-    south_pcb18$anova["SourceWind", "F value"],
-    south_pcb20$anova["SourceWind", "F value"],
-    south_pcb31$anova["SourceWind", "F value"]))
-
-hs_activity_summary <- data.frame(
-  Congener = c("PCB8", "PCB15", "PCB18.30", "PCB20.28", "PCB31"),
-  Activity_F = c(
-    hs_pcb8$anova["Activity", "F value"],
-    hs_pcb15$anova["Activity", "F value"],
-    hs_pcb18$anova["Activity", "F value"],
-    hs_pcb20$anova["Activity", "F value"],
-    hs_pcb31$anova["Activity", "F value"]),
-  SourceWind_F = c(
-    hs_pcb8$anova["SourceWind", "F value"],
-    hs_pcb15$anova["SourceWind", "F value"],
-    hs_pcb18$anova["SourceWind", "F value"],
-    hs_pcb20$anova["SourceWind", "F value"],
-    hs_pcb31$anova["SourceWind", "F value"]))
-
-# Exposure summary --------------------------------------------------------
-south_exposure_summary <- data.frame(
-  Congener = c("PCB8", "PCB15", "PCB18.30", "PCB20.28", "PCB31"),
-  Exposure_F = c(
-    south_exp8$anova["Exposure_d1", "F value"],
-    south_exp15$anova["Exposure_d1", "F value"],
-    south_exp18$anova["Exposure_d1", "F value"],
-    south_exp20$anova["Exposure_d1", "F value"],
-    south_exp31$anova["Exposure_d1", "F value"]),
-  SourceWind_F = c(
-    south_exp8$anova["SourceWind", "F value"],
-    south_exp15$anova["SourceWind", "F value"],
-    south_exp18$anova["SourceWind", "F value"],
-    south_exp20$anova["SourceWind", "F value"],
-    south_exp31$anova["SourceWind", "F value"]))
-
-hs_exposure_summary <- data.frame(
-  Congener = c("PCB8", "PCB15", "PCB18.30", "PCB20.28", "PCB31"),
-  Exposure_F = c(
-    hs_exp8$anova["Exposure_d1", "F value"],
-    hs_exp15$anova["Exposure_d1", "F value"],
-    hs_exp18$anova["Exposure_d1", "F value"],
-    hs_exp20$anova["Exposure_d1", "F value"],
-    hs_exp31$anova["Exposure_d1", "F value"]),
-  SourceWind_F = c(
-    hs_exp8$anova["SourceWind", "F value"],
-    hs_exp15$anova["SourceWind", "F value"],
-    hs_exp18$anova["SourceWind", "F value"],
-    hs_exp20$anova["SourceWind", "F value"],
-    hs_exp31$anova["SourceWind", "F value"]))
-
-# Minimum distance to active dredging -------------------------------------
-south_ace$MinDist_Dredge <- NA_real_
-hs_ace$MinDist_Dredge <- NA_real_
-
-# South
-for(i in seq_len(nrow(south_ace))) {
-  
-  d <- south_ace$date[i]
-  
-  active <- dredge_inventory[
-    dredge_inventory$DateStart <= d &
-      dredge_inventory$DateEnd >= d,
-  ]
-  
-  if(nrow(active) > 0) {
-    
-    dists <- active$Dista_South_m
-    
-    dists <- dists[!is.na(dists)]
-    
-    if(length(dists) > 0) {
-      
-      south_ace$MinDist_Dredge[i] <- min(dists)
-      
-    }
-  }
-}
-
-# HS
-for(i in seq_len(nrow(hs_ace))) {
-  
-  d <- hs_ace$date[i]
-  
-  active <- dredge_inventory[
-    dredge_inventory$DateStart <= d &
-      dredge_inventory$DateEnd >= d,
-  ]
-  
-  if(nrow(active) > 0) {
-    
-    dists <- active$Dista_HS_m
-    
-    dists <- dists[!is.na(dists)]
-    
-    if(length(dists) > 0) {
-      
-      hs_ace$MinDist_Dredge[i] <- min(dists)
-      
-    }
-  }
-}
-
-# Safety check
-south_ace$MinDist_Dredge[
-  is.infinite(south_ace$MinDist_Dredge)
-] <- NA
-
-hs_ace$MinDist_Dredge[
-  is.infinite(hs_ace$MinDist_Dredge)
-] <- NA
-
-# Check
-summary(south_ace$MinDist_Dredge)
-
-summary(hs_ace$MinDist_Dredge)
-
-table(is.na(south_ace$MinDist_Dredge))
-
-table(is.na(hs_ace$MinDist_Dredge))
-
-# Minimum distance model --------------------------------------------------
-run_distance_model <- function(data, pcb_var){
-  
-  formula_txt <- paste0("log10(", pcb_var, ") ~ log10(MinDist_Dredge) + ",
-                        "SourceWind + ", "invT + wind_speed + ",
-                        "sin_season + cos_season")
+  formula_txt <- paste0(
+    "log10(", pcb_var, ") ~ ",
+    "Activity + SourceWind + ",
+    covars
+  )
   
   fit <- lm(
-    as.formula(formula_txt), data = subset(data, !is.na(MinDist_Dredge)))
+    as.formula(formula_txt),
+    data = data
+  )
   
-  list(model = fit, anova = car::Anova(fit, type = 2), summary = summary(fit))
+  list(
+    model = fit,
+    anova = car::Anova(fit, type = 2),
+    activity = emmeans(fit, pairwise ~ Activity),
+    sourcewind = emmeans(fit, pairwise ~ SourceWind),
+    summary = summary(fit)
+  )
 }
 
-# South
-south_dist8 <- run_distance_model(south_ace, "PCB8")
-south_dist15 <- run_distance_model(south_ace, "PCB15")
-south_dist18 <- run_distance_model(south_ace, "PCB18.30")
-south_dist20 <- run_distance_model(south_ace, "PCB20.28")
-south_dist31 <- run_distance_model(south_ace, "PCB31")
-
-# HS
-hs_dist8 <- run_distance_model(hs_ace, "PCB8")
-hs_dist15 <- run_distance_model(hs_ace, "PCB15")
-hs_dist18 <- run_distance_model(hs_ace, "PCB18.30")
-hs_dist20 <- run_distance_model(hs_ace, "PCB20.28")
-hs_dist31 <- run_distance_model(hs_ace, "PCB31")
-
-# Distance summary tables -------------------------------------------------
-south_distance_summary <- data.frame(
-  Congener = c("PCB8", "PCB15", "PCB18.30", "PCB20.28", "PCB31"),
-  Distance_F = c(
-    south_dist8$anova["log10(MinDist_Dredge)", "F value"],
-    south_dist15$anova["log10(MinDist_Dredge)", "F value"],
-    south_dist18$anova["log10(MinDist_Dredge)", "F value"],
-    south_dist20$anova["log10(MinDist_Dredge)", "F value"],
-    south_dist31$anova["log10(MinDist_Dredge)", "F value"]),
-  Distance_p = c(
-    south_dist8$anova["log10(MinDist_Dredge)", "Pr(>F)"],
-    south_dist15$anova["log10(MinDist_Dredge)", "Pr(>F)"],
-    south_dist18$anova["log10(MinDist_Dredge)", "Pr(>F)"],
-    south_dist20$anova["log10(MinDist_Dredge)", "Pr(>F)"],
-    south_dist31$anova["log10(MinDist_Dredge)", "Pr(>F)"]),
-  SourceWind_F = c(
-    south_dist8$anova["SourceWind", "F value"],
-    south_dist15$anova["SourceWind", "F value"],
-    south_dist18$anova["SourceWind", "F value"],
-    south_dist20$anova["SourceWind", "F value"],
-    south_dist31$anova["SourceWind", "F value"]),
-  SourceWind_p = c(
-    south_dist8$anova["SourceWind", "Pr(>F)"],
-    south_dist15$anova["SourceWind", "Pr(>F)"],
-    south_dist18$anova["SourceWind", "Pr(>F)"],
-    south_dist20$anova["SourceWind", "Pr(>F)"],
-    south_dist31$anova["SourceWind", "Pr(>F)"]))
-
-hs_distance_summary <- data.frame(
-  Congener = c("PCB8", "PCB15", "PCB18.30", "PCB20.28", "PCB31"),
-  Distance_F = c(
-    hs_dist8$anova["log10(MinDist_Dredge)", "F value"],
-    hs_dist15$anova["log10(MinDist_Dredge)", "F value"],
-    hs_dist18$anova["log10(MinDist_Dredge)", "F value"],
-    hs_dist20$anova["log10(MinDist_Dredge)", "F value"],
-    hs_dist31$anova["log10(MinDist_Dredge)", "F value"]),
-  Distance_p = c(
-    hs_dist8$anova["log10(MinDist_Dredge)", "Pr(>F)"],
-    hs_dist15$anova["log10(MinDist_Dredge)", "Pr(>F)"],
-    hs_dist18$anova["log10(MinDist_Dredge)", "Pr(>F)"],
-    hs_dist20$anova["log10(MinDist_Dredge)", "Pr(>F)"],
-    hs_dist31$anova["log10(MinDist_Dredge)", "Pr(>F)"]),
-  SourceWind_F = c(
-    hs_dist8$anova["SourceWind", "F value"],
-    hs_dist15$anova["SourceWind", "F value"],
-    hs_dist18$anova["SourceWind", "F value"],
-    hs_dist20$anova["SourceWind", "F value"],
-    hs_dist31$anova["SourceWind", "F value"]),
-  SourceWind_p = c(
-    hs_dist8$anova["SourceWind", "Pr(>F)"],
-    hs_dist15$anova["SourceWind", "Pr(>F)"],
-    hs_dist18$anova["SourceWind", "Pr(>F)"],
-    hs_dist20$anova["SourceWind", "Pr(>F)"],
-    hs_dist31$anova["SourceWind", "Pr(>F)"]))
-
-south_distance_summary
-
-hs_distance_summary
-
-# plots
-ggplot(
-  subset(
-    south_ace,
-    !is.na(SourceWind)
-  ),
-  aes(
-    SourceWind,
-    log10(PCB31)
+# Exposure model
+run_exposure_model <- function(data, pcb_var){
+  
+  formula_txt <- paste0(
+    "log10(", pcb_var, ") ~ ",
+    "Exposure_d1 + SourceWind + ",
+    covars
   )
-) +
-  geom_boxplot()
+  
+  fit <- lm(
+    as.formula(formula_txt),
+    data = data
+  )
+  
+  list(
+    model = fit,
+    anova = car::Anova(fit, type = 2),
+    summary = summary(fit)
+  )
+}
 
-ggplot(
-  subset(
-    south_ace,
-    !is.na(SourceWind)
-  ),
-  aes(
+# Distance model
+run_distance_model <- function(data, pcb_var){
+  
+  formula_txt <- paste0(
+    "log10(", pcb_var, ") ~ ",
+    "log10(MinDist_Dredge) + SourceWind + ",
+    covars
+  )
+  
+  fit <- lm(
+    as.formula(formula_txt),
+    data = subset(
+      data,
+      !is.na(MinDist_Dredge)
+    )
+  )
+  
+  list(
+    model = fit,
+    anova = car::Anova(fit, type = 2),
+    summary = summary(fit)
+  )
+}
+
+# Turbidity-enhanced models
+covars_turb <- paste(
+  "invT",
+  "wind_speed",
+  "sin_season",
+  "cos_season",
+  "flow_abs",
+  "water_temp",
+  "turb_FNU",
+  sep = " + "
+)
+
+run_activity_turb_model <- function(data, pcb_var){
+  
+  formula_txt <- paste0(
+    "log10(", pcb_var, ") ~ ",
+    "Activity + SourceWind + ",
+    covars_turb
+  )
+  
+  fit <- lm(
+    as.formula(formula_txt),
+    data = data
+  )
+  
+  list(
+    model = fit,
+    anova = car::Anova(fit, type = 2),
+    summary = summary(fit)
+  )
+}
+
+south_turb <- subset(
+  south_ace,
+  !is.na(turb_FNU)
+)
+
+# PCB8
+south_pcb8 <- run_activity_model(
+  south_turb,
+  "PCB8"
+)
+
+south_pcb8_turb <- run_activity_turb_model(
+  south_turb,
+  "PCB8"
+)
+
+AIC(
+  south_pcb8$model,
+  south_pcb8_turb$model
+)
+
+anova(
+  south_pcb8$model,
+  south_pcb8_turb$model
+)
+
+# PCB15
+
+south_pcb15 <- run_activity_model(
+  south_turb,
+  "PCB15"
+)
+
+south_pcb15_turb <- run_activity_turb_model(
+  south_turb,
+  "PCB15"
+)
+
+AIC(
+  south_pcb15$model,
+  south_pcb15_turb$model
+)
+
+anova(
+  south_pcb15$model,
+  south_pcb15_turb$model
+)
+
+# PCB18+30
+
+south_pcb18 <- run_activity_model(
+  south_turb,
+  "PCB18.30"
+)
+
+south_pcb18_turb <- run_activity_turb_model(
+  south_turb,
+  "PCB18.30"
+)
+
+AIC(
+  south_pcb18$model,
+  south_pcb18_turb$model
+)
+
+anova(
+  south_pcb18$model,
+  south_pcb18_turb$model
+)
+
+# PCB20+28
+
+south_pcb20 <- run_activity_model(
+  south_turb,
+  "PCB20.28"
+)
+
+south_pcb20_turb <- run_activity_turb_model(
+  south_turb,
+  "PCB20.28"
+)
+
+AIC(
+  south_pcb20$model,
+  south_pcb20_turb$model
+)
+
+anova(
+  south_pcb20$model,
+  south_pcb20_turb$model
+)
+
+# PCB31
+
+south_pcb31 <- run_activity_model(
+  south_turb,
+  "PCB31"
+)
+
+south_pcb31_turb <- run_activity_turb_model(
+  south_turb,
+  "PCB31"
+)
+
+AIC(
+  south_pcb31$model,
+  south_pcb31_turb$model
+)
+
+anova(
+  south_pcb31$model,
+  south_pcb31_turb$model
+)
+
+cor(
+  south_ace[, c("invT", "water_temp")],
+  use = "complete.obs"
+)
+
+# New model
+south_compare <- south_turb %>%
+  dplyr::select(
+    PCB8,
     Activity,
-    log10(PCB31)
-  )
-) +
-  geom_boxplot()
+    SourceWind,
+    invT,
+    wind_speed,
+    sin_season,
+    cos_season,
+    flow_abs
+  ) %>%
+  na.omit()
 
+
+m_nowt_cc <- lm(
+  log10(PCB8) ~
+    Activity +
+    SourceWind +
+    invT +
+    wind_speed +
+    sin_season +
+    cos_season +
+    flow_abs,
+  data = south_compare
+)
+
+m_reduced_cc <- lm(
+  log10(PCB8) ~
+    Activity +
+    SourceWind +
+    invT +
+    wind_speed +
+    sin_season,
+  data = south_compare
+)
+
+AIC(m_nowt_cc, m_reduced_cc)
+
+anova(m_reduced_cc, m_nowt_cc)
