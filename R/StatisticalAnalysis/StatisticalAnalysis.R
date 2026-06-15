@@ -52,13 +52,32 @@ activity_daily$date <- as.Date(activity_daily$date)
 
 activity_daily$Activity <- factor(activity_daily$Activity)
 
+# Water data --------------------------------------------------------------
+water_flow <- read.csv("Data/USGS/flow_ihsc.csv")
+water_flow$date <- as.Date(water_flow$date)
+
+water_temp <- read.csv("Data/USGS/tempwater_ihsc.csv")
+water_temp$date <- as.Date(water_temp$date)
+
+water_turb <- read.csv("Data/USGS/turb_ihsc.csv")
+water_turb$date <- as.Date(water_turb$date)
+
 # Merge datasets ----------------------------------------------------------
 ace <- ace %>%
   left_join(
     meteo_unique, by = "date"
   ) %>%
   left_join(
-    activity_daily, by = "date")
+    activity_daily, by = "date"
+    ) %>%
+  left_join(
+    water_flow, by = "date"
+    ) %>%
+  left_join(
+    water_temp, by = "date"
+  ) %>%
+  left_join(
+    water_turb, by = "date")
 
 ace$Activity <-
   relevel(ace$Activity, ref = "Idle")
@@ -96,7 +115,8 @@ hs_ace$SourceWind <- factor(
 run_activity_model <- function(data, pcb_var){
   
   formula_txt <- paste0("log10(", pcb_var, ") ~ Activity + SourceWind + ",
-                        "invT + wind_speed + ", "sin_season + cos_season")
+                        "invT + wind_speed + ", "sin_season + cos_season +",
+                        "flow_abs + water_temp + turb_FNU")
   
   fit <- lm(as.formula(formula_txt), data = data)
   
@@ -120,6 +140,7 @@ hs_pcb20 <- run_activity_model(hs_ace, "PCB20.28")
 hs_pcb31 <- run_activity_model(hs_ace, "PCB31")
 
 # Dredging inventory ------------------------------------------------------
+# needs to fix the dredge_inventory file
 dredge_inventory <- read.csv("Data/RemediationProject/dredge_inventory.csv")
 
 dredge_inventory$DateStart <- as.Date(dredge_inventory$DateStart,
