@@ -31,18 +31,23 @@ ace <- ace[, 1:7]
 ace <- ace %>%
   mutate(across(starts_with("PCB"), ~ . / 1000))
 
+# Change forma to date
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
 
 # Meteorological data -----------------------------------------------------
 meteo.data <- read.csv("Data/Meteorology/Meteo_EastChicago.csv")
 
+# Change forma to date
 meteo.data$date <- as.Date(meteo.data$date, origin = "1899-12-30")
 
+# Transform to Kelvin
 meteo.data$air_temp <- meteo.data$air_temp + 273.15
 
+# Calculate inverse temperature
 meteo.data <- meteo.data %>%
   mutate(invT = 1000 / air_temp)
 
+# Get unique date values
 meteo_unique <- meteo.data[!duplicated(meteo.data$date), ]
 
 # Activity data -----------------------------------------------------------
@@ -51,19 +56,21 @@ activity_daily$date <- as.Date(activity_daily$date)
 activity_daily$Activity <- factor(activity_daily$Activity)
 
 # Water data --------------------------------------------------------------
+# Flow
 water_flow <- read.csv("Data/USGS/flow_ihsc.csv")
 water_flow$date <- as.Date(water_flow$date)
-# Remove duplicates
+# Get unique values
 water_flow_unique <- water_flow[!duplicated(water_flow$date), ]
-
+# Water temperature
 water_temp <- read.csv("Data/USGS/tempwater_ihsc.csv")
 water_temp$date <- as.Date(water_temp$date)
-# Remove duplicates
+# Get unique values
 water_temp_unique <- water_temp[!duplicated(water_temp$date), ]
 
+# Water turbidity
 water_turb <- read.csv("Data/USGS/turb_ihsc.csv")
 water_turb$date <- as.Date(water_turb$date)
-# Remove duplicates
+# Get unique values
 water_turb_unique <- water_turb[!duplicated(water_turb$date), ]
 
 # Merge datasets ----------------------------------------------------------
@@ -108,7 +115,7 @@ hs_ace$cos_season <- cos(z * hs_ace$julian_day)
 south_ace$SourceWind <- factor(
   ifelse(
     between(south_ace$wind_direction, 30, 90), "Source", "NonSource"),
-  levels = c("NonSource", "Source"))
+  levels = c("NonSource", "Source")) # NonSource is the reference
 
 hs_ace$SourceWind <- factor(
   ifelse(
@@ -128,69 +135,44 @@ covars <- paste(
 # Activity model
 run_activity_model <- function(data, pcb_var){
   
-  formula_txt <- paste0(
-    "log10(", pcb_var, ") ~ ",
-    "Activity + SourceWind + ",
-    covars
-  )
+  formula_txt <- paste0("log10(", pcb_var, ") ~ ",
+                        "Activity + SourceWind + ",
+                        covars)
   
-  fit <- lm(
-    as.formula(formula_txt),
-    data = data
-  )
+  fit <- lm(as.formula(formula_txt), data = data)
   
-  list(
-    model = fit,
-    anova = car::Anova(fit, type = 2),
-    activity = emmeans(fit, pairwise ~ Activity),
-    sourcewind = emmeans(fit, pairwise ~ SourceWind),
-    summary = summary(fit)
-  )
+  list(model = fit, anova = car::Anova(fit, type = 2),
+       activity = emmeans(fit, pairwise ~ Activity),
+       sourcewind = emmeans(fit, pairwise ~ SourceWind),
+       summary = summary(fit))
 }
 
 # Exposure model
 run_exposure_model <- function(data, pcb_var){
   
-  formula_txt <- paste0(
-    "log10(", pcb_var, ") ~ ",
-    "Exposure_d1 + SourceWind + ",
-    covars
-  )
+  formula_txt <- paste0("log10(", pcb_var, ") ~ ",
+                        "Exposure_d1 + SourceWind + ",
+                        covars)
   
-  fit <- lm(
-    as.formula(formula_txt),
-    data = data
-  )
+  fit <- lm(as.formula(formula_txt), data = data)
   
-  list(
-    model = fit,
-    anova = car::Anova(fit, type = 2),
-    summary = summary(fit)
-  )
+  list(model = fit, anova = car::Anova(fit, type = 2),
+       summary = summary(fit))
 }
 
 # Distance model
 run_distance_model <- function(data, pcb_var){
   
-  formula_txt <- paste0(
-    "log10(", pcb_var, ") ~ ",
-    "log10(MinDist_Dredge) + SourceWind + ",
-    covars
-  )
+  formula_txt <- paste0("log10(", pcb_var, ") ~ ",
+                        "log10(MinDist_Dredge) + SourceWind + ",
+                        covars)
   
-  fit <- lm(
-    as.formula(formula_txt),
-    data = subset(
-      data,
-      !is.na(MinDist_Dredge)
-    )
-  )
+  fit <- lm(as.formula(formula_txt),
+            data = subset(data,
+                          !is.na(MinDist_Dredge)))
   
-  list(
-    model = fit,
-    anova = car::Anova(fit, type = 2),
-    summary = summary(fit)
-  )
+  list(model = fit, anova = car::Anova(fit, type = 2),
+       summary = summary(fit))
 }
 
 # Turbidity-enhanced models
