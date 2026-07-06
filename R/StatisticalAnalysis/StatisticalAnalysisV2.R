@@ -104,6 +104,9 @@ ace_wide <- ace_wide %>%
 ace$Activity <-
   relevel(ace$Activity, ref = "Idle")
 
+
+
+
 # Seasonality variables ---------------------------------------------------
 z <- 2 * pi / 365.25
 
