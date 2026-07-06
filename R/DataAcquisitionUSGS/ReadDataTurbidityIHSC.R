@@ -19,11 +19,12 @@
 
 # Read data ---------------------------------------------------------------
 ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
-
-ace <- ace.raw %>%
-  filter(location != 0)
-
+# Remove blanks cells
+ace <- subset(ace.raw, !grepl("0", location))
+# Change forma to date
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
+# Get unique date values
+ace_dates <- ace[!duplicated(ace$date), "date", drop = FALSE]
 
 # Define USGS site and parameter ------------------------------------------
 site.ihsc <- "04092750"
@@ -40,7 +41,7 @@ turb_values <- turb %>%
   st_drop_geometry() %>%
   select(time, turb_FNU = value)
 
-turb_ihsc <- ace %>%
+turb_ihsc <- ace_dates %>%
   select(date) %>%
   left_join(
     turb_values,

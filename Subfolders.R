@@ -1,6 +1,7 @@
 # Code to create sub folders
 
 dir.create("R")
+dir.create("R/RemediationActivities")
 dir.create("R/AirConcCalculations")
 dir.create("R/AirConcCalculations/ACE")
 dir.create("R/AirConcCalculations/AESOP")
@@ -29,7 +30,7 @@ dir.create("Data/Extra/Soil")
 dir.create("Data/Mike")
 dir.create("Data/Meteorology")
 dir.create("Data/PCProperties")
-dir.create("Data/RemediationProject")
+dir.create("Data/RemediationActivities")
 dir.create("Data/USGS")
 
 dir.create("Output")

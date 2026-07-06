@@ -71,11 +71,12 @@ find_single_col <- function(df, pattern, what = "column") {
 
 # Read ACE data -----------------------------------------------------------
 ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
-
-ace <- ace.raw %>%
-  filter(location != 0)
-
+# Remove blanks cells
+ace <- subset(ace.raw, !grepl("0", location))
+# Change forma to date
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
+# Get unique date values
+ace_dates <- ace[!duplicated(ace$date), "date", drop = FALSE]
 
 # Download USGS water temperature -----------------------------------------
 site.ihsc <- "04092750"
@@ -148,7 +149,12 @@ air <- wide_act %>%
   select(date, doy, tair)
 
 # Build calibration dataset -----------------------------------------------
-ace_cal <- ace %>%
+ace_cal <- ace_dates %>%
+  left_join(
+    temp_values,
+    by = c("date" = "time")
+  ) %>%
+  rename(temp = value) %>%
   left_join(
     air %>% select(date, tair),
     by = "date")
@@ -177,7 +183,12 @@ all_dates <- air %>%
 all_dates$pred_water <- predict(fit, newdata = all_dates)
 
 # Create final data frame -------------------------------------------------
-tempwater_ihsc <- ace %>%
+tempwater_ihsc <- ace_dates %>%
+  left_join(
+    temp_values,
+    by = c("date" = "time")
+  ) %>%
+  rename(temp = value) %>%
   left_join(
     all_dates %>%
       select(date, pred_water),

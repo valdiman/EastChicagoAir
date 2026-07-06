@@ -19,11 +19,12 @@
 
 # Read data ---------------------------------------------------------------
 ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
-
-ace <- ace.raw %>%
-  filter(location != 0)
-
+# Remove blanks cells
+ace <- subset(ace.raw, !grepl("0", location))
+# Change forma to date
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
+# Get unique date values
+ace_dates <- ace[!duplicated(ace$date), "date", drop = FALSE]
 
 # Define USGS site and parameter ------------------------------------------
 site.ihsc <- "04092750"
@@ -41,8 +42,7 @@ flow_values <- flow %>%
   st_drop_geometry() %>%
   select(time, flow_cfs = value)
 
-flow_ihsc <- ace %>%
-  select(date) %>%
+flow_ihsc <- ace_dates %>%
   left_join(
     flow_values,
     by = c("date" = "time")
@@ -50,7 +50,7 @@ flow_ihsc <- ace %>%
   transmute(
     date,
     flow_cfs,
-    flow_abs = abs(flow_cfs), # Negative values meaning contrary flow direction
+    flow_abs = abs(flow_cfs),   # Absolute discharge (reverse flows are negative)
     log_flow = log10(abs(flow_cfs))
   )
 

@@ -47,7 +47,10 @@ station.2 <- stations[stations$usaf == "725337", ] # 2006:2023
 ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
 # Remove blanks cells
 ace <- subset(ace.raw, !grepl("0", location))
+# Change forma to date
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
+# Get unique date values
+ace_dates <- ace[!duplicated(ace$date), "date", drop = FALSE]
 
 # Helper function to download ISD data for a range of years
 download_isd_years <- function(usaf, wban, years) {
@@ -150,8 +153,7 @@ weather_daily <- weather_daily %>%
   ) %>%
   select(-air_temp_station1)
 
-meteo_EastChicago <- ace %>%
-  select(date) %>%
+meteo_EastChicago <- ace_dates %>%
   left_join(weather_daily, by = "date")
 
 # Check values
