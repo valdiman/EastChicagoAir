@@ -47,7 +47,7 @@ meteo.data <- meteo.data %>%
 meteo_unique <- meteo.data[!duplicated(meteo.data$date), ]
 
 # Activity data -----------------------------------------------------------
-activity_daily <- read.csv("Data/RemediationProject/activity_dailyV2.csv")
+activity_daily <- read.csv("Data/RemediationActivities/activity_dailyV2.csv")
 activity_daily$date <- as.Date(activity_daily$date)
 activity_daily$Activity <- factor(activity_daily$Activity)
 
@@ -72,7 +72,7 @@ water_turb_unique <- water_turb[!duplicated(water_turb$date), ]
 # Merge datasets ----------------------------------------------------------
 ace <- ace %>%
   left_join(
-    meteo_unique, by = "date"
+    meteo.data, by = "date"
     ) %>%
   left_join(
     water_flow_unique, by = "date"

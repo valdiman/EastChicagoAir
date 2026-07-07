@@ -62,7 +62,7 @@ meteo_data <- meteo_data %>%
   mutate(invT = 1000 / air_temp)
 
 # Activity data -----------------------------------------------------------
-activity_daily <- read.csv("Data/RemediationActivities/activity_dailyV2.csv")
+activity_daily <- read.csv("Data/RemediationActivities/activity_daily.csv")
 activity_daily$date <- as.Date(activity_daily$date)
 activity_daily$Activity <- factor(activity_daily$Activity)
 
