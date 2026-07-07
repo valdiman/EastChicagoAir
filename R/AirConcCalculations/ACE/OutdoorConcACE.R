@@ -7,35 +7,21 @@
 # Install packages
 {
   install.packages("dplyr")
-  install.packages("scales")
-  install.packages("tidyr")
   install.packages("ggplot2")
-  install.packages("ggnewscale")
-  install.packages("lubridate")
 }
 
 # Library
 {
   library(dplyr)
-  library(scales)
   library(ggplot2)
-  library(tidyr)
-  library(ggnewscale)
-  library(lubridate)
-  library(purrr)
 }
 
 # Read data ---------------------------------------------------------------
 ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
-
-# Remove empty spaces
-ace <- ace.raw %>%
-  filter(location != 0)
+# Remove blanks cells
+ace <- subset(ace.raw, !grepl("0", location))
 
 # ACE Data ----------------------------------------------------------------
-# Change units to pg/m3 from ng/m3
-ace <- ace %>%
-  mutate(across(starts_with("PCB") & !ends_with("_unc"), ~ . / 1000))
 # Convert numeric date to Date format assuming Excel-style serial number
 # ccvs file needs to be this format for the date XXXXX (e.g., 41188)
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
@@ -54,43 +40,9 @@ ace$location2 <- ifelse(grepl("South", ace$location), "South", "HS")
 ace$location2 <- factor(ace$location2)
 
 # Read activity data ------------------------------------------------------
-# Revised data
-act.data <- read.csv("Data/RemediationProject/activities_distanceV2.csv")
-
-# Clean activity data
-activities_clean <- act.data %>%
-  mutate(
-    DateStart = as.Date(DateStart, "%m/%d/%Y"),
-    DateEnd   = as.Date(DateEnd, "%m/%d/%Y")
-  ) %>%
-  distinct(DateStart, DateEnd, Activity)
-
-# Create full daily timeline
-all_dates <- data.frame(
-  date = seq(min(activities_clean$DateStart),
-             max(activities_clean$DateEnd),
-             by = "day")
-)
-
-# Assign activity (priority: Idle > Dredging > Construction)
-get_activity <- function(d, df) {
-  if (any(df$Activity == "Idle" & d >= df$DateStart & d <= df$DateEnd)) {
-    "Idle"
-  } else if (any(df$Activity == "Dredging" & d >= df$DateStart & d <= df$DateEnd)) {
-    "Dredging"
-  } else if (any(df$Activity == "Construction" & d >= df$DateStart & d <= df$DateEnd)) {
-    "Construction"
-  } else {
-    "Idle"  # default
-  }
-}
-
-activity_daily <- all_dates %>%
-  mutate(Activity = map_chr(date, get_activity, df = activities_clean))
-
-# Export data
-write.csv(activity_daily, "Data/RemediationProject/activity_dailyV2.csv",
-          row.names = FALSE)
+activity_daily <- read.csv("Data/RemediationActivities/activity_dailyV2.csv")
+# Change forma to date
+activity_daily$date <- as.Date(activity_daily$date, origin = "1899-12-30")
 
 # Plot
 # PCB 8
@@ -111,7 +63,7 @@ p.pcb8 <- ggplot(ace, aes(x = date, y = PCB8)) +
                      values = c("< DL" = 19, "≥ DL" = 1),
                      na.translate = FALSE) +
   theme_bw() +
-  labs(x = "", y = "PCB 8 concentration (ng/m3)") +
+  labs(x = "", y = "PCB 8 concentration (pg/m3)") +
   scale_x_date(date_breaks = "3 months",
                date_labels = "%b %Y") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1,
@@ -144,7 +96,7 @@ p.pcb15 <- ggplot(ace, aes(x = date, y = PCB15)) +
                      values = c("< DL" = 19, "≥ DL" = 1),
                      na.translate = FALSE) +
   theme_bw() +
-  labs(x = "", y = "PCB 15 concentration (ng/m3)") +
+  labs(x = "", y = "PCB 15 concentration (pg/m3)") +
   scale_x_date(date_breaks = "3 months",
                date_labels = "%b %Y") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1,
@@ -178,7 +130,7 @@ p.pcb18 <- ggplot(ace, aes(x = date, y = PCB18.30)) +
                      values = c("< DL" = 19, "≥ DL" = 1),
                      na.translate = FALSE) +
   theme_bw() +
-  labs(x = "", y = "PCB 18+30 concentration (ng/m3)") +
+  labs(x = "", y = "PCB 18+30 concentration (pg/m3)") +
   scale_x_date(date_breaks = "3 months",
                date_labels = "%b %Y") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1,
@@ -212,7 +164,7 @@ p.pcb20 <- ggplot(ace, aes(x = date, y = PCB20.28)) +
                      values = c("< DL" = 19, "≥ DL" = 1),
                      na.translate = FALSE) +
   theme_bw() +
-  labs(x = "", y = "PCB 20+28 concentration (ng/m3)") +
+  labs(x = "", y = "PCB 20+28 concentration (pg/m3)") +
   scale_x_date(date_breaks = "3 months",
                date_labels = "%b %Y") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1,
@@ -246,7 +198,7 @@ p.pcb31 <- ggplot(ace, aes(x = date, y = PCB31)) +
                      values = c("< DL" = 19, "≥ DL" = 1),
                      na.translate = FALSE) +
   theme_bw() +
-  labs(x = "", y = "PCB 31 concentration (ng/m3)") +
+  labs(x = "", y = "PCB 31 concentration (pg/m3)") +
   scale_x_date(date_breaks = "3 months",
                date_labels = "%b %Y") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1,
@@ -283,7 +235,7 @@ p.pcb8 <- ggplot(subset(ace, location2 == "South"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 8 concentration @ CDF (ng/m3)") +
+  labs(x = "", y = "PCB 8 concentration @ CDF (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),
@@ -318,7 +270,7 @@ p.pcb15 <- ggplot(subset(ace, location2 == "South"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 15 concentration @ CDF (ng/m3)") +
+  labs(x = "", y = "PCB 15 concentration @ CDF (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),
@@ -353,7 +305,7 @@ p.pcb18 <- ggplot(subset(ace, location2 == "South"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 18+30 concentration @ CDF (ng/m3)") +
+  labs(x = "", y = "PCB 18+30 concentration @ CDF (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),
@@ -388,7 +340,7 @@ p.pcb20 <- ggplot(subset(ace, location2 == "South"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 20+28 concentration @ CDF (ng/m3)") +
+  labs(x = "", y = "PCB 20+28 concentration @ CDF (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),
@@ -423,7 +375,7 @@ p.pcb31 <- ggplot(subset(ace, location2 == "South"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 31 concentration @ CDF (ng/m3)") +
+  labs(x = "", y = "PCB 31 concentration @ CDF (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),
@@ -458,7 +410,7 @@ p.pcb8 <- ggplot(subset(ace, location2 == "HS"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 8 concentration @ HS (ng/m3)") +
+  labs(x = "", y = "PCB 8 concentration @ HS (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),
@@ -492,7 +444,7 @@ p.pcb15 <- ggplot(subset(ace, location2 == "HS"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 15 concentration @ HS (ng/m3)") +
+  labs(x = "", y = "PCB 15 concentration @ HS (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),
@@ -526,7 +478,7 @@ p.pcb18 <- ggplot(subset(ace, location2 == "HS"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 18+30 concentration @ HS (ng/m3)") +
+  labs(x = "", y = "PCB 18+30 concentration @ HS (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),
@@ -560,7 +512,7 @@ p.pcb20 <- ggplot(subset(ace, location2 == "HS"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 20+28 concentration @ HS (ng/m3)") +
+  labs(x = "", y = "PCB 20+28 concentration @ HS (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),
@@ -594,7 +546,7 @@ p.pcb31 <- ggplot(subset(ace, location2 == "HS"),
                     na.translate = FALSE) +
   scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
   theme_bw() +
-  labs(x = "", y = "PCB 31 concentration @ HS (ng/m3)") +
+  labs(x = "", y = "PCB 31 concentration @ HS (pg/m3)") +
   theme(axis.text.x = element_text(face = "bold", size = 7,
                                    color = "black", angle = 60,
                                    hjust = 1),

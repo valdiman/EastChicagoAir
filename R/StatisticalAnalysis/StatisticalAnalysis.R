@@ -27,10 +27,6 @@ ace <- ace.raw %>%
 
 ace <- ace[, 1:7]
 
-# From pg to ng
-ace <- ace %>%
-  mutate(across(starts_with("PCB"), ~ . / 1000))
-
 # Change forma to date
 ace$date <- as.Date(ace$date, origin = "1899-12-30")
 
