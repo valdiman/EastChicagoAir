@@ -43,14 +43,11 @@ stations_nearby <- stations %>%
 station.1 <- stations[stations$usaf == "725340", ] # 2001:2005 (1973:2025)
 station.2 <- stations[stations$usaf == "725337", ] # 2006:2023
 
-# Read ACE Data
-ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
-# Remove blanks cells
-ace <- subset(ace.raw, !grepl("0", location))
+# Read dates from all_activity_daily.csv file
+all_dates <- read.csv("Data/RemediationActivities/all_activity_daily.csv")
+
 # Change forma to date
-ace$date <- as.Date(ace$date, origin = "1899-12-30")
-# Get unique date values
-ace_dates <- ace[!duplicated(ace$date), "date", drop = FALSE]
+all_dates$date <- as.Date(all_dates$date, origin = "1899-12-30")
 
 # Helper function to download ISD data for a range of years
 download_isd_years <- function(usaf, wban, years) {
@@ -67,7 +64,7 @@ download_isd_years <- function(usaf, wban, years) {
 
 # Years by station
 years_1 <- 2001:2005
-years_2 <- 2006:2023
+years_2 <- 2006:2024
 
 # Download data from each station
 weather_1 <- download_isd_years(
@@ -153,7 +150,7 @@ weather_daily <- weather_daily %>%
   ) %>%
   select(-air_temp_station1)
 
-meteo_EastChicago <- ace_dates %>%
+meteo_EastChicago <- all_dates %>%
   left_join(weather_daily, by = "date")
 
 # Check values
@@ -166,3 +163,19 @@ summary(meteo_EastChicago$wind_direction)
 write.csv(meteo_EastChicago, "Data/Meteorology/Meteo_EastChicago.csv",
           row.names = FALSE)
 
+
+meteo_EastChicago %>%
+  filter(is.na(air_temp)) %>%
+  select(date)
+
+meteo_EastChicago %>%
+  filter(is.na(wind_direction)) %>%
+  select(date)
+
+nrow(meteo_EastChicago)
+
+length(unique(meteo_EastChicago$date))
+
+meteo_EastChicago %>%
+  count(date) %>%
+  filter(n > 1)

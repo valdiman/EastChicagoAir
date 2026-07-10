@@ -33,16 +33,16 @@ remediation_activities <- remediation_activities %>%
 # Expand activities to daily records
 daily_activities <- remediation_activities %>%
   mutate(
-    Date = map2(DateStart, DateEnd, seq.Date, by = "day"),
-    n_days = lengths(Date),
+    date = map2(DateStart, DateEnd, seq.Date, by = "day"),
+    n_days = lengths(date),
     Value = case_when(
       Units == "yd3" ~ Value / n_days,  # convert total volume to daily volume
       TRUE ~ Value
     )
   ) %>%
-  unnest(Date) %>%
+  unnest(date) %>%
   select(
-    Date,
+    date,
     Activity,
     Location,
     Metric,
@@ -53,7 +53,7 @@ daily_activities <- remediation_activities %>%
 
 # Create complete daily sequence
 all_dates <- tibble(
-  Date = seq(
+  date = seq(
     min(remediation_activities$DateStart),
     max(remediation_activities$DateEnd),
     by = "day"
@@ -62,11 +62,136 @@ all_dates <- tibble(
 
 # Add idle days
 daily_activities <- all_dates %>%
-  left_join(daily_activities, by = "Date") %>%
+  left_join(daily_activities, by = "date") %>%
   mutate(
     Activity = replace_na(Activity, "Idle")
   ) %>%
-  arrange(Date)
+  arrange(date)
+
+
+
+library(dplyr)
+library(tidyr)
+library(purrr)
+
+# Read activity data ------------------------------------------------------
+
+remediation_activities <- read.csv(
+  "Data/RemediationActivities/activities_distanceV3.csv"
+)
+
+# Convert dates
+remediation_activities <- remediation_activities %>%
+  mutate(
+    DateStart = as.Date(DateStart, "%m/%d/%Y"),
+    DateEnd   = as.Date(DateEnd, "%m/%d/%Y")
+  )
+
+# Expand each activity to daily records -----------------------------------
+
+daily_activities <- remediation_activities %>%
+  mutate(
+    date = map2(DateStart, DateEnd, seq.Date, by = "day"),
+    n_days = lengths(date),
+    
+    # Convert total volume to daily volume
+    Value = case_when(
+      Units == "yd3" ~ Value / n_days,
+      TRUE ~ Value
+    )
+  ) %>%
+  unnest(date) %>%
+  select(
+    date,
+    Activity,
+    Location,
+    ReferencePoint,
+    Value,
+    Units
+  )
+
+# Summarize to ONE row per day --------------------------------------------
+
+daily_summary <- daily_activities %>%
+  group_by(date) %>%
+  summarise(
+    Activity = paste(sort(unique(na.omit(Activity))), collapse = "; "),
+    Location = paste(sort(unique(na.omit(Location))), collapse = "; "),
+    
+    Distance_HS_m = {
+      x <- Value[
+        Units == "m" &
+          ReferencePoint == "HS" &
+          !is.na(Value)
+      ]
+      if (length(x) > 0) max(x) else NA_real_
+    },
+    
+    Distance_South_m = {
+      x <- Value[
+        Units == "m" &
+          ReferencePoint == "South" &
+          !is.na(Value)
+      ]
+      if (length(x) > 0) max(x) else NA_real_
+    },
+    
+    Volume_yd3 = {
+      x <- Value[
+        Units == "yd3" &
+          !is.na(Value)
+      ]
+      if (length(x) > 0) sum(x) else NA_real_
+    },
+    
+    .groups = "drop"
+  )
+
+# Create complete sequence of dates ---------------------------------------
+
+all_dates <- tibble(
+  date = seq(
+    min(remediation_activities$DateStart),
+    max(remediation_activities$DateEnd),
+    by = "day"
+  )
+)
+
+# Add idle days -----------------------------------------------------------
+
+daily_activities <- all_dates %>%
+  left_join(daily_summary, by = "date") %>%
+  mutate(
+    Activity = replace_na(Activity, "Idle")
+  ) %>%
+  arrange(date)
+
+# Check result ------------------------------------------------------------
+
+str(daily_activities)
+
+nrow(daily_activities)
+length(unique(daily_activities$date))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Export data
 write.csv(daily_activities, "Data/RemediationActivities/all_activity_daily.csv",
