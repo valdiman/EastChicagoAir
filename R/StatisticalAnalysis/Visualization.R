@@ -11,13 +11,19 @@
   library(ggplot2)
 }
 
+# Read data
 dataset <- read.csv("Data/FinalDataset/DatasetV01.csv")
-dataset$date <- as.Date(dataset$date)
+
 dataset <- dataset %>%
   mutate(
-    Activity = factor(
-      Activity,
-      levels = c("Idle", "Construction", "Dredging")
+    date = as.Date(date, format = "%m/%d/%Y")
+  )
+
+dataset <- dataset %>%
+  mutate(
+    across(
+      c(Construction, Dredging, Idle),
+      ~ factor(.x, levels = c(0, 1))
     ),
     SourceWind_South = factor(
       SourceWind_South,
@@ -29,6 +35,8 @@ dataset <- dataset %>%
     )
   )
 
+# Plot
+# Time
 ggplot(dataset, aes(date, PCB8_South)) +
   geom_line() +
   geom_point() +
@@ -39,13 +47,47 @@ ggplot(dataset, aes(date, PCB8_HS)) +
   geom_point() +
   theme_bw()
 
-ggplot(dataset, aes(date, DailyDredgeVolume_yd3)) +
-  geom_step() +
+# Wind speed
+ggplot(dataset, aes(wind_speed, PCB8_South)) +
+  geom_point(alpha = 0.6) +
   theme_bw()
 
-ggplot(dataset, aes(date, turb_dredge_mean)) +
-  geom_line() +
-  geom_point(size = 0.6) +
+ggplot(dataset, aes(wind_speed, PCB8_HS)) +
+  geom_point(alpha = 0.6) +
   theme_bw()
 
+# Air temperature
+ggplot(dataset, aes(invT, PCB8_South)) +
+  geom_point(alpha = 0.6) +
+  theme_bw()
 
+ggplot(dataset, aes(invT, PCB8_HS)) +
+  geom_point(alpha = 0.6) +
+  theme_bw()
+
+# Water temperature
+ggplot(dataset, aes(water_temp, PCB8_South)) +
+  geom_point(alpha = 0.6) +
+  theme_bw()
+
+ggplot(dataset, aes(water_temp, PCB8_HS)) +
+  geom_point(alpha = 0.6) +
+  theme_bw()
+
+# Water flow
+ggplot(dataset, aes(flow_abs, PCB8_South)) +
+  geom_point(alpha = 0.6) +
+  theme_bw()
+
+ggplot(dataset, aes(flow_abs, PCB8_HS)) +
+  geom_point(alpha = 0.6) +
+  theme_bw()
+
+# Water turb
+ggplot(dataset, aes(turb_FNU, PCB8_South)) +
+  geom_point(alpha = 0.6) +
+  theme_bw()
+
+ggplot(dataset, aes(turb_FNU, PCB8_HS)) +
+  geom_point(alpha = 0.6) +
+  theme_bw()

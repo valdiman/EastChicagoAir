@@ -55,17 +55,12 @@ dredge_daily <- dredge_turb %>%
     .groups = "drop"
   )
 
-# Read ACE concentration data ---------------------------------------------
-ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
-# Remove blanks cells
-ace <- subset(ace.raw, !grepl("0", location))
-# Change forma to date
-ace$date <- as.Date(ace$date, origin = "1899-12-30")
-# Get unique date values
-ace_dates <- ace[!duplicated(ace$date), "date", drop = FALSE]
+# Activity dates
+all_dates <- read.csv("Data/RemediationActivities/all_activity_daily.csv")
+all_dates$date <- as.Date(all_dates$date, origin = "1899-12-30")
 
 # Merge data
-turb_dredge_ihsc <- ace_dates %>%
+turb_dredge_ihsc <- all_dates %>%
   select(date) %>%
   left_join(
     dredge_daily,
