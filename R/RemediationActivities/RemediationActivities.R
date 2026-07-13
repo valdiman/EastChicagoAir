@@ -10,6 +10,7 @@
   install.packages("dplyr")
   install.packages("tidyr")
   install.packages("purr")
+  install.packages("lubridate")
 }
 
 # Library
@@ -17,180 +18,136 @@
   library(dplyr)
   library(tidyr)
   library(purrr)
+  library(lubridate)
 }
 
 # Read activity data ------------------------------------------------------
-# Revised data
-remediation_activities <- read.csv("Data/RemediationActivities/activities_distanceV3.csv")
-
-# Convert dates
-remediation_activities <- remediation_activities %>%
-  mutate(
-    DateStart = as.Date(DateStart, "%m/%d/%Y"),
-    DateEnd   = as.Date(DateEnd, "%m/%d/%Y")
-  )
-
-# Expand activities to daily records
-daily_activities <- remediation_activities %>%
-  mutate(
-    date = map2(DateStart, DateEnd, seq.Date, by = "day"),
-    n_days = lengths(date),
-    Value = case_when(
-      Units == "yd3" ~ Value / n_days,  # convert total volume to daily volume
-      TRUE ~ Value
-    )
-  ) %>%
-  unnest(date) %>%
-  select(
-    date,
-    Activity,
-    Location,
-    Metric,
-    ReferencePoint,
-    Value,
-    Units
-  )
-
-# Create complete daily sequence
-all_dates <- tibble(
-  date = seq(
-    min(remediation_activities$DateStart),
-    max(remediation_activities$DateEnd),
-    by = "day"
-  )
-)
-
-# Add idle days
-daily_activities <- all_dates %>%
-  left_join(daily_activities, by = "date") %>%
-  mutate(
-    Activity = replace_na(Activity, "Idle")
-  ) %>%
-  arrange(date)
-
-
-
-library(dplyr)
-library(tidyr)
-library(purrr)
-
-# Read activity data ------------------------------------------------------
-
 remediation_activities <- read.csv(
-  "Data/RemediationActivities/activities_distanceV3.csv"
-)
+  "Data/RemediationActivities/activities_distanceV4.csv")
 
-# Convert dates
+# Change date format
 remediation_activities <- remediation_activities %>%
   mutate(
     DateStart = as.Date(DateStart, "%m/%d/%Y"),
     DateEnd   = as.Date(DateEnd, "%m/%d/%Y")
   )
 
-# Expand each activity to daily records -----------------------------------
-
-daily_activities <- remediation_activities %>%
+# Expand to daily records
+daily_long <- remediation_activities %>%
   mutate(
-    date = map2(DateStart, DateEnd, seq.Date, by = "day"),
-    n_days = lengths(date),
-    
-    # Convert total volume to daily volume
-    Value = case_when(
-      Units == "yd3" ~ Value / n_days,
-      TRUE ~ Value
-    )
+    date = map2(DateStart, DateEnd, seq.Date, by = "day")
   ) %>%
   unnest(date) %>%
-  select(
-    date,
-    Activity,
-    Location,
-    ReferencePoint,
-    Value,
-    Units
+  mutate(
+    Year = year(date)
   )
 
-# Summarize to ONE row per day --------------------------------------------
-
-daily_summary <- daily_activities %>%
+# Activity table
+activity_daily <- daily_long %>%
   group_by(date) %>%
   summarise(
-    Activity = paste(sort(unique(na.omit(Activity))), collapse = "; "),
-    Location = paste(sort(unique(na.omit(Location))), collapse = "; "),
-    
-    Distance_HS_m = {
-      x <- Value[
-        Units == "m" &
-          ReferencePoint == "HS" &
-          !is.na(Value)
-      ]
-      if (length(x) > 0) max(x) else NA_real_
-    },
-    
-    Distance_South_m = {
-      x <- Value[
-        Units == "m" &
-          ReferencePoint == "South" &
-          !is.na(Value)
-      ]
-      if (length(x) > 0) max(x) else NA_real_
-    },
-    
-    Volume_yd3 = {
-      x <- Value[
-        Units == "yd3" &
-          !is.na(Value)
-      ]
-      if (length(x) > 0) sum(x) else NA_real_
-    },
-    
+    Construction = as.integer(any(Activity == "Construction")),
+    Dredging     = as.integer(any(Activity == "Dredging")),
+    Idle         = as.integer(any(Activity == "Idle")),
     .groups = "drop"
   )
 
-# Create complete sequence of dates ---------------------------------------
-
-all_dates <- tibble(
-  date = seq(
-    min(remediation_activities$DateStart),
-    max(remediation_activities$DateEnd),
-    by = "day"
-  )
-)
-
-# Add idle days -----------------------------------------------------------
-
-daily_activities <- all_dates %>%
-  left_join(daily_summary, by = "date") %>%
+# Distances
+distance_wide <- daily_long %>%
+  filter(Units == "m") %>%
   mutate(
-    Activity = replace_na(Activity, "Idle")
+    Variable = paste(Location, ReferencePoint, "m", sep = "_")
   ) %>%
+  select(date, Variable, Value) %>%
+  pivot_wider(
+    names_from = Variable,
+    values_from = Value
+  )
+
+# Volumes
+# Annual volume by Year and Location
+annual_volume <- daily_long %>%
+  filter(Units == "yd3") %>%
+  group_by(Year, Location) %>%
+  summarise(
+    AnnualVolume = first(Value),
+    .groups = "drop"
+  )
+
+# Number of unique dredging days
+active_days <- daily_long %>%
+  filter(
+    Activity == "Dredging",
+    Units == "m"
+  ) %>%
+  distinct(
+    Year,
+    Location,
+    date
+  ) %>%
+  group_by(
+    Year,
+    Location
+  ) %>%
+  summarise(
+    ActiveDays = n(),
+    .groups = "drop"
+  )
+
+# Compute daily production
+volume_daily <- annual_volume %>%
+  left_join(
+    active_days,
+    by = c("Year", "Location")
+  ) %>%
+  mutate(
+    DailyVolume = AnnualVolume / ActiveDays
+  )
+
+# Attach daily and annual volumes
+volume_long <- daily_long %>%
+  filter(Units == "yd3") %>%
+  left_join(
+    volume_daily,
+    by = c("Year", "Location")
+  )
+
+# Daily volume
+volume_daily_wide <- volume_long %>%
+  mutate(
+    Variable = paste0(Location, "_Daily_yd3")
+  ) %>%
+  select(
+    date,
+    Variable,
+    DailyVolume
+  ) %>%
+  pivot_wider(
+    names_from = Variable,
+    values_from = DailyVolume
+  )
+
+# Annual volume
+volume_annual_wide <- volume_long %>%
+  mutate(
+    Variable = paste0(Location, "_Annual_yd3")
+  ) %>%
+  select(
+    date,
+    Variable,
+    AnnualVolume
+  ) %>%
+  pivot_wider(
+    names_from = Variable,
+    values_from = AnnualVolume
+  )
+
+# Final daily dataset
+daily_activities <- activity_daily %>%
+  left_join(distance_wide, by = "date") %>%
+  left_join(volume_daily_wide, by = "date") %>%
+  left_join(volume_annual_wide, by = "date") %>%
   arrange(date)
-
-# Check result ------------------------------------------------------------
-
-str(daily_activities)
-
-nrow(daily_activities)
-length(unique(daily_activities$date))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Export data
