@@ -50,7 +50,7 @@ ace_wide <- ace %>%
   )
 
 # Meteorological data -----------------------------------------------------
-meteo_data <- read.csv("Data/Meteorology/Meteo_EastChicago.csv")
+meteo_data <- read.csv("Data/Meteorology/MeteoEC.csv")
 # Change forma to date
 meteo_data$date <- as.Date(meteo_data$date, origin = "1899-12-30")
 
@@ -62,9 +62,11 @@ meteo_data <- meteo_data %>%
   mutate(invT = 1000 / air_temp)
 
 # Activity data -----------------------------------------------------------
-activity_daily <- read.csv("Data/RemediationActivities/activity_daily.csv")
+activity_daily <- read.csv("Data/RemediationActivities/all_activity_daily.csv")
 activity_daily$date <- as.Date(activity_daily$date)
-activity_daily$Activity <- factor(activity_daily$Activity)
+activity_daily$Construction <- factor(activity_daily$Construction)
+activity_daily$Dredging <- factor(activity_daily$Dredging)
+activity_daily$Idle <- factor(activity_daily$Idle)
 
 # Water data --------------------------------------------------------------
 # Flow
@@ -83,36 +85,25 @@ water_dredg_turb <- read.csv("Data/ACE/tubidity_dredge_ihsc.csv")
 water_dredg_turb$date <- as.Date(water_dredg_turb$date)
 
 # Merge datasets ----------------------------------------------------------
-ace_wide <- ace_wide %>%
-  left_join(
-    meteo_data, by = "date"
-    ) %>%
-  left_join(
-    water_flow, by = "date"
-    ) %>%
-  left_join(
-    water_temp, by = "date"
-    ) %>%
-  left_join(
-    water_turb, by = "date"
-    ) %>%
-  left_join(
-    water_dredg_turb, by = "date"
-  ) %>%
-  left_join(
-    activity_daily, by = "date")
+final_data <- activity_daily %>%
+  left_join(ace_wide, by = "date") %>%
+  left_join(meteo_data, by = "date") %>%
+  left_join(water_flow, by = "date") %>%
+  left_join(water_temp, by = "date") %>%
+  left_join(water_turb, by = "date") %>%
+  left_join(water_dredg_turb, by = "date")
 
 # Seasonality variables ---------------------------------------------------
 z <- 2 * pi / 365.25
 
-ace_wide <- ace_wide %>%
+final_data <- final_data %>%
   mutate(
     julian_day = yday(date),
     sin_season = sin(z * julian_day),
     cos_season = cos(z * julian_day))
 
 # Source wind indicators --------------------------------------------------
-ace_wide <- ace_wide %>%
+final_data <- final_data %>%
   mutate(
     SourceWind_South = factor(
       ifelse(
@@ -128,5 +119,5 @@ ace_wide <- ace_wide %>%
       levels = c("NonSource", "Source")))  # NonSource is the reference
 
 # Export data
-write.csv(ace_wide, "Data/FinalDataset/DatasetV01.csv",
+write.csv(final_data, "Data/FinalDataset/DatasetV01.csv",
           row.names = FALSE)

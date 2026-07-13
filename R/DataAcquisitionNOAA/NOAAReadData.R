@@ -27,155 +27,167 @@
 # the most recent data in all cases. A noaaWeather package is planned as a
 # replacement but the functions will not be interchangeable.
 
-# IHSC coordinates
+# Site coordinates
 site_lat <- 41.646490
 site_lon <- -87.473562
 
-# Load NOAA ISD station list
+# NOAA stations
 stations <- isd_stations()
 
-# Find nearby stations (within 50 km)
 stations_nearby <- stations %>%
-  mutate(distance_km = distHaversine(cbind(site_lon, site_lat), cbind(lon, lat)) / 1000) %>%
+  mutate(
+    distance_km = distHaversine(
+      cbind(site_lon, site_lat),
+      cbind(lon, lat)
+    ) / 1000
+  ) %>%
   filter(distance_km <= 50)
 
-# Select the nearest major station (1: CHICAGO MIDWAY INTL ARPT; 2: GARY/CHICAGO AIRPORT)
-station.1 <- stations[stations$usaf == "725340", ] # 2001:2005 (1973:2025)
-station.2 <- stations[stations$usaf == "725337", ] # 2006:2023
+# Midway (used for 2001-2005 and gap filling)
+station1 <- stations %>% filter(usaf == "725340")
 
-# Read dates from all_activity_daily.csv file
+# Gary/Chicago (main station 2006-2024)
+station2 <- stations %>% filter(usaf == "725337")
+
+# Activity dates
 all_dates <- read.csv("Data/RemediationActivities/all_activity_daily.csv")
-
-# Change forma to date
 all_dates$date <- as.Date(all_dates$date, origin = "1899-12-30")
 
-# Helper function to download ISD data for a range of years
-download_isd_years <- function(usaf, wban, years) {
-  weather_list <- list()
-  
-  for (y in years) {
-    cat("Downloading year:", y, "\n")
-    dat <- isd(usaf = usaf, wban = wban, year = y)
-    weather_list[[as.character(y)]] <- dat
+# Helper function
+download_isd_years <- function(usaf, wban, years){
+  out <- vector("list", length(years))
+  for(i in seq_along(years)){
+    cat("Downloading", years[i], "\n")
+    out[[i]] <- isd(
+      usaf = as.character(usaf),
+      wban = as.character(wban),
+      year = years[i]
+    )
   }
-  
-  bind_rows(weather_list)
+  bind_rows(out)
 }
 
-# Years by station
-years_1 <- 2001:2005
-years_2 <- 2006:2024
-
-# Download data from each station
-weather_1 <- download_isd_years(
-  usaf = as.character(station.1$usaf[1]),
-  wban = as.character(station.1$wban[1]),
-  years = years_1
+# Download data
+weather1 <- download_isd_years(
+  usaf = station1$usaf[1],
+  wban = station1$wban[1],
+  years = 2001:2005
 )
 
-weather_2 <- download_isd_years(
-  usaf = as.character(station.2$usaf[1]),
-  wban = as.character(station.2$wban[1]),
-  years = years_2
+weather2 <- download_isd_years(
+  usaf = station2$usaf[1],
+  wban = station2$wban[1],
+  years = 2006:2024
 )
 
-# Combine both station periods
-weather_all <- bind_rows(weather_1, weather_2)
+weather_all <- bind_rows(weather1, weather2)
 
-# Dates where station 1 air temperature should be used
-target_dates <- as.Date(c(
-  "2014-11-01",
-  "2015-07-05",
-  "2015-07-11",
-  "2015-08-22",
-  "2023-05-06"
-))
-
-target_years <- sort(unique(as.integer(format(target_dates, "%Y"))))
-
-# Download station 1 only for the years needed to fill those dates
-weather_1_extra <- download_isd_years(
-  usaf = as.character(station.1$usaf[1]),
-  wban = as.character(station.1$wban[1]),
-  years = target_years
-)
-
-# Circular mean for wind direction
-circ_mean_deg <- function(x) {
+# Circular mean
+circ_mean_deg <- function(x){
   x <- x[!is.na(x)]
-  if (length(x) == 0) return(NA_real_)
-  (atan2(mean(sin(x * pi / 180)), mean(cos(x * pi / 180))) * 180 / pi) %% 360
+  if(length(x)==0) return(NA_real_)
+  (
+    atan2(
+      mean(sin(x*pi/180)),
+      mean(cos(x*pi/180))
+    )*180/pi
+  ) %% 360
 }
 
-# Daily values from station 2 (main dataset)
+# Daily weather
 weather_daily <- weather_all %>%
   mutate(
-    date = as.Date(date, format = "%Y%m%d"),
+    date = as.Date(date,"%Y%m%d"),
     air_temp = as.numeric(temperature),
     wind_speed = as.numeric(wind_speed),
     wind_direction = as.numeric(wind_direction),
     air_pressure = as.numeric(air_pressure),
-    
-    air_temp = ifelse(air_temp %in% c(9999, 99999), NA, air_temp / 10),
-    wind_speed = ifelse(wind_speed %in% c(9999, 99999), NA, wind_speed / 10),
-    wind_direction = ifelse(wind_direction %in% c(999, 9999, 99999), NA, wind_direction),
-    air_pressure = ifelse(air_pressure %in% c(99999, 999999), NA, air_pressure / 10)
+    air_temp =
+      ifelse(air_temp==9999,NA,air_temp/10),
+    wind_speed =
+      ifelse(wind_speed==9999,NA,wind_speed/10),
+    wind_direction =
+      ifelse(wind_direction %in% c(999,9999,99999),
+             NA,
+             wind_direction),
+    air_pressure =
+      ifelse(air_pressure==99999,
+             NA,
+             air_pressure/10)
   ) %>%
-  filter(!is.na(date)) %>%
   group_by(date) %>%
   summarise(
-    air_temp = mean(air_temp, na.rm = TRUE),
-    wind_speed = mean(wind_speed, na.rm = TRUE),
-    wind_direction = circ_mean_deg(wind_direction),
-    air_pressure = mean(air_pressure, na.rm = TRUE),
-    .groups = "drop"
+    air_temp =
+      if(all(is.na(air_temp))) NA_real_
+    else mean(air_temp,na.rm=TRUE),
+    wind_speed =
+      if(all(is.na(wind_speed))) NA_real_
+    else mean(wind_speed,na.rm=TRUE),
+    wind_direction =
+      circ_mean_deg(wind_direction),
+    air_pressure =
+      if(all(is.na(air_pressure))) NA_real_
+    else mean(air_pressure,na.rm=TRUE),
+    .groups="drop"
   )
 
-# Daily air temperature from station 1 for target dates only
-weather_1_daily <- weather_1_extra %>%
-  mutate(
-    date = as.Date(date, format = "%Y%m%d"),
-    air_temp = as.numeric(temperature),
-    air_temp = ifelse(air_temp %in% c(9999, 99999), NA, air_temp / 10)
-  ) %>%
-  filter(date %in% target_dates) %>%
-  group_by(date) %>%
-  summarise(air_temp_station1 = mean(air_temp, na.rm = TRUE), .groups = "drop")
+# Find missing air temperatures
+missing_dates <- weather_daily %>%
+  filter(is.na(air_temp)) %>%
+  pull(date)
 
-# Replace air temperature on those dates with station 1 values
-weather_daily <- weather_daily %>%
-  left_join(weather_1_daily, by = "date") %>%
+missing_years <- sort(unique(as.integer(format(missing_dates,"%Y"))))
+
+# Download Midway for missing years
+weather1_extra <- download_isd_years(
+  station1$usaf,
+  station1$wban,
+  missing_years
+)
+
+# Daily Midway temperatures
+weather1_fill <- weather1_extra %>%
   mutate(
-    air_temp = if_else(date %in% target_dates, air_temp_station1, air_temp)
+    date = as.Date(date,"%Y%m%d"),
+    air_temp = as.numeric(temperature),
+    air_temp =
+      ifelse(air_temp==9999,
+             NA,
+             air_temp/10)
+  ) %>%
+  filter(date %in% missing_dates) %>%
+  group_by(date) %>%
+  summarise(
+    air_temp_station1 =
+      if(all(is.na(air_temp))) NA_real_
+    else mean(air_temp,na.rm=TRUE),
+    .groups="drop"
+  )
+
+# Replace missing temperatures
+weather_daily <- weather_daily %>%
+  left_join(weather1_fill, by="date") %>%
+  mutate(
+    air_temp =
+      coalesce(
+        air_temp,
+        air_temp_station1
+      )
   ) %>%
   select(-air_temp_station1)
 
-meteo_EastChicago <- all_dates %>%
+# Final dataset
+weather_daily <- all_dates %>%
+  distinct(date) %>%
+  arrange(date) %>%
   left_join(weather_daily, by = "date")
 
 # Check values
-summary(meteo_EastChicago$air_temp)
-summary(meteo_EastChicago$wind_speed)
-summary(meteo_EastChicago$air_pressure)
-summary(meteo_EastChicago$wind_direction)
+summary(weather_daily$air_temp)
+summary(weather_daily$wind_speed)
+summary(weather_daily$air_pressure)
+summary(weather_daily$wind_direction)
 
 # Save
-write.csv(meteo_EastChicago, "Data/Meteorology/Meteo_EastChicago.csv",
+write.csv(weather_daily, "Data/Meteorology/MeteoEC.csv",
           row.names = FALSE)
-
-
-meteo_EastChicago %>%
-  filter(is.na(air_temp)) %>%
-  select(date)
-
-meteo_EastChicago %>%
-  filter(is.na(wind_direction)) %>%
-  select(date)
-
-nrow(meteo_EastChicago)
-
-length(unique(meteo_EastChicago$date))
-
-meteo_EastChicago %>%
-  count(date) %>%
-  filter(n > 1)

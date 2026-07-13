@@ -18,13 +18,8 @@
 }
 
 # Read data ---------------------------------------------------------------
-ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
-# Remove blanks cells
-ace <- subset(ace.raw, !grepl("0", location))
-# Change forma to date
-ace$date <- as.Date(ace$date, origin = "1899-12-30")
-# Get unique date values
-ace_dates <- ace[!duplicated(ace$date), "date", drop = FALSE]
+ace_dates <- read.csv("Data/RemediationActivities/all_activity_daily.csv")
+ace_dates$date <- as.Date(ace_dates$date, origin = "1899-12-30")
 
 # Define USGS site and parameter ------------------------------------------
 site.ihsc <- "04092750"
@@ -35,7 +30,7 @@ flow <- read_waterdata_daily(
   monitoring_location_id = paste("USGS", site.ihsc, sep = "-"),
   parameter_code = paramflow,
   statistic_id = "00003",  # mean daily values
-  time = c(as.character(min(ace$date)), as.character(max(ace$date))))
+  time = c(as.character(min(ace_dates$date)), as.character(max(ace_dates$date))))
 
 # Clean USGS data
 flow_values <- flow %>%

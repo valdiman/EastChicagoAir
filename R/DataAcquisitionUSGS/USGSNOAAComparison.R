@@ -17,9 +17,9 @@
 }
 
 # Read IHSC daily data ----------------------------------------------------
-airtemp_ihsc <- read.csv("Data/USGS/airtemp_ihsc.csv")
-windspeed_ihsc <- read.csv("Data/USGS/windspeed_ihsc.csv")
-winddir_ihsc <- read.csv("Data/USGS/winddir_ihsc.csv")
+airtemp_ihsc <- read.csv("Data/USGS/airtemp_ihsc2023.csv")
+windspeed_ihsc <- read.csv("Data/USGS/windspeed_ihsc2023.csv")
+winddir_ihsc <- read.csv("Data/USGS/winddir_ihsc2023.csv")
 
 airtemp_ihsc$date <- as.Date(airtemp_ihsc$date)
 windspeed_ihsc$date <- as.Date(windspeed_ihsc$date)

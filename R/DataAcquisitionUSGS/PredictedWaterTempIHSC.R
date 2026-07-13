@@ -37,13 +37,11 @@
 
 # Helper function ---------------------------------------------------------
 find_single_col <- function(df, pattern, what = "column") {
-  
   matches <- grep(
     pattern,
     names(df),
     ignore.case = TRUE,
     value = TRUE)
-  
   if(length(matches) == 0) {
     stop(
       sprintf(
@@ -53,7 +51,6 @@ find_single_col <- function(df, pattern, what = "column") {
       ),
       call. = FALSE)
   }
-  
   if(length(matches) > 1) {
     stop(
       sprintf(
@@ -65,18 +62,12 @@ find_single_col <- function(df, pattern, what = "column") {
       call. = FALSE
     )
   }
-  
   matches
 }
 
-# Read ACE data -----------------------------------------------------------
-ace.raw <- read.csv("Data/Air/EastChicago/ACE/ACEDataV02.csv")
-# Remove blanks cells
-ace <- subset(ace.raw, !grepl("0", location))
-# Change forma to date
-ace$date <- as.Date(ace$date, origin = "1899-12-30")
-# Get unique date values
-ace_dates <- ace[!duplicated(ace$date), "date", drop = FALSE]
+# Activity dates
+all_dates <- read.csv("Data/RemediationActivities/all_activity_daily.csv")
+all_dates$date <- as.Date(all_dates$date, origin = "1899-12-30")
 
 # Download USGS water temperature -----------------------------------------
 site.ihsc <- "04092750"
@@ -87,8 +78,8 @@ temp <- read_waterdata_daily(
   parameter_code = "00010",
   statistic_id = "00003",
   time = c(
-    as.character(min(ace$date)),
-    as.character(max(ace$date))))
+    as.character(min(all_dates$date)),
+    as.character(max(all_dates$date))))
 
 temp_values <- temp %>%
   st_drop_geometry() %>%
@@ -97,8 +88,16 @@ temp_values <- temp %>%
   summarize(value = mean(value, na.rm = TRUE),
             .groups = "drop")
 
-ace <- ace %>%
-  left_join(temp_values, by = c("date" = "time")) %>%
+# Create a table with unique dates only
+date_tbl <- all_dates %>%
+  distinct(date) %>%
+  arrange(date)
+
+ace <- date_tbl %>%
+  left_join(
+    temp_values,
+    by = c("date" = "time")
+  ) %>%
   rename(temp = value)
 
 # Download Daymet air temperature -----------------------------------------
@@ -114,7 +113,6 @@ dm_act <- download_daymet("act", lat, lon,
 
 if(is.list(dm_act) &&
    "data" %in% names(dm_act)) {
-  
   dm_act <- dm_act$data
 }
 
@@ -139,9 +137,7 @@ air <- wide_act %>%
       as.Date(
         paste0(year, "-01-01")
       ) + yday - 1,
-    
     doy = yday(date),
-    
     tair =
       (.data[[tmax_col]] +
          .data[[tmin_col]]) / 2
@@ -149,7 +145,7 @@ air <- wide_act %>%
   select(date, doy, tair)
 
 # Build calibration dataset -----------------------------------------------
-ace_cal <- ace_dates %>%
+ace_cal <- date_tbl %>%
   left_join(
     temp_values,
     by = c("date" = "time")
@@ -157,7 +153,8 @@ ace_cal <- ace_dates %>%
   rename(temp = value) %>%
   left_join(
     air %>% select(date, tair),
-    by = "date")
+    by = "date"
+  )
 
 cal <- ace_cal %>%
   filter(
@@ -183,7 +180,7 @@ all_dates <- air %>%
 all_dates$pred_water <- predict(fit, newdata = all_dates)
 
 # Create final data frame -------------------------------------------------
-tempwater_ihsc <- ace_dates %>%
+tempwater_ihsc <- date_tbl %>%
   left_join(
     temp_values,
     by = c("date" = "time")
@@ -196,7 +193,8 @@ tempwater_ihsc <- ace_dates %>%
   ) %>%
   transmute(
     date,
-    water_temp = coalesce(temp, pred_water))
+    water_temp = coalesce(temp, pred_water)
+  )
 
 # Model diagnostics -------------------------------------------------------
 cal$pred <- predict(fit, newdata = cal)
