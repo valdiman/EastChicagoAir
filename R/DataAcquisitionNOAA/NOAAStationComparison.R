@@ -203,12 +203,12 @@ wind_dir_df <- compare_2010_2020 %>%
 # ------------------------------------------------------------
 # 12) 1:1 plot helper
 # ------------------------------------------------------------
-plot_1to1 <- function(df, x, y, xlab, ylab, title) {
+plot_1to1 <- function(df, x, y, xlab, ylab) {
   ggplot(df, aes(x = .data[[x]], y = .data[[y]])) +
     geom_point(alpha = 0.5, size = 1.5) +
     geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
     coord_equal() +
-    labs(title = title, x = xlab, y = ylab) +
+    labs(x = xlab, y = ylab) +
     theme_minimal()
 }
 
@@ -219,18 +219,16 @@ p_temp <- plot_1to1(
   temp_df,
   x = "air_temp_s1",
   y = "air_temp_s2",
-  xlab = "Station 1 Temperature",
-  ylab = "Station 2 Temperature",
-  title = "Temperature: Station 1 vs Station 2"
+  xlab = "CHICAGO MIDWAY INTL ARPT Air Temperature",
+  ylab = "GARY/CHICAGO ARPT Air Temperature"
 )
 
 p_wind_speed <- plot_1to1(
   wind_speed_df,
   x = "wind_speed_s1",
   y = "wind_speed_s2",
-  xlab = "Station 1 Wind Speed",
-  ylab = "Station 2 Wind Speed",
-  title = "Wind Speed: Station 1 vs Station 2"
+  xlab = "CHICAGO MIDWAY INTL ARPT Wind Speed",
+  ylab = "GARY/CHICAGO ARPT Wind Speed"
 )
 
 # ------------------------------------------------------------
@@ -242,11 +240,8 @@ p_wind_dir <- ggplot(wind_dir_df, aes(x = wind_direction_s1, y = wind_direction_
   geom_point(alpha = 0.5, size = 1.5) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   coord_equal(xlim = lims, ylim = lims) +
-  labs(
-    title = "Wind Direction: Station 1 vs Station 2",
-    x = "Station 1 Wind Direction (degrees)",
-    y = "Station 2 Wind Direction wrapped"
-  ) +
+  labs(x = "CHICAGO MIDWAY INTL ARPT: Wind direction (degrees)",
+       y = "GARY/CHICAGO ARPT: Wind direction wrapped") +
   theme_minimal()
 
 # ------------------------------------------------------------
