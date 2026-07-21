@@ -98,9 +98,9 @@ z <- 2 * pi / 365.25
 
 final_data <- final_data %>%
   mutate(
-    julian_day = yday(date),
-    sin_season = sin(z * julian_day),
-    cos_season = cos(z * julian_day))
+    day_of_year = yday(date),
+    sin_season = sin(z * day_of_year),
+    cos_season = cos(z * day_of_year))
 
 # Source wind indicators --------------------------------------------------
 final_data <- final_data %>%
