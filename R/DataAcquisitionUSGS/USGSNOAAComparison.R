@@ -172,7 +172,6 @@ build_comparison <- function(airport_daily,
         ((wind_dir_deg -
             wind_direction_airport +
             180) %% 360) - 180,
-      
       wind_dir_wrapped =
         wind_direction_airport + wd_diff)
   
@@ -196,7 +195,6 @@ gary <- build_comparison(
 
 # Summary statistics ------------------------------------------------------
 summarize_linear <- function(obs, ref) {
-  
   data.frame(
     Correlation = cor(obs, ref, use = "complete.obs"),
     Bias = mean(obs - ref, na.rm = TRUE),
@@ -205,7 +203,6 @@ summarize_linear <- function(obs, ref) {
 }
 
 summarize_direction <- function(wd_diff) {
-  
   data.frame(
     Bias = mean(wd_diff, na.rm = TRUE),
     SD = sd(wd_diff, na.rm = TRUE),
@@ -251,19 +248,17 @@ temp_plot_df <- bind_rows(
   
   midway$temp %>%
     transmute(
-      airport = "Midway",
+      airport = "Chicago Midway Arpt",
       x = air_temp_airport,
       y = air_temp_C),
   
   gary$temp %>%
     transmute(
-      airport = "Gary",
+      airport = "Gary/Chicago Arpt",
       x = air_temp_airport,
       y = air_temp_C))
 
-ggplot(
-  temp_plot_df,
-  aes(x = x, y = y)) +
+p_temp <- ggplot(temp_plot_df, aes(x = x, y = y)) +
   geom_point(alpha = 0.5) +
   geom_abline(
     intercept = 0,
@@ -273,68 +268,71 @@ ggplot(
   facet_wrap(~ airport) +
   labs(
     x = "Airport Temperature (°C)",
-    y = "IHSC Temperature (°C)",
-    title = "Temperature Comparison") +
-  theme_minimal()
+    y = "IHSC Temperature (°C)") +
+  theme_bw()
+
+# See plot
+p_temp
 
 windspeed_plot_df <- bind_rows(
   
   midway$windspeed %>%
     transmute(
-      airport = "Midway",
+      airport = "Chicago Midway Arpt",
       x = wind_speed_airport,
       y = wind_speed_ms),
   
   gary$windspeed %>%
     transmute(
-      airport = "Gary",
+      airport = "Gary/Chicago Arpt",
       x = wind_speed_airport,
       y = wind_speed_ms))
 
-ggplot(
-  windspeed_plot_df,
-  aes(x = x, y = y)) +
+p_winspeed <- ggplot(windspeed_plot_df, aes(x = x, y = y)) +
   geom_point(alpha = 0.5) +
   geom_abline(
     intercept = 0,
     slope = 1,
     linetype = "dashed") +
-  coord_equal() +
+  coord_equal(xlim = c(0, 10), ylim = c(0, 10)) +
   facet_wrap(~ airport) +
   labs(
     x = "Airport Wind Speed (m/s)",
-    y = "IHSC Wind Speed (m/s)",
-    title = "Wind Speed Comparison") +
-  theme_minimal()
+    y = "IHSC Wind Speed (m/s)") +
+  theme_bw()
 
 winddir_plot_df <- bind_rows(
   
   midway$winddir %>%
     transmute(
-      airport = "Midway",
+      airport = "Chicago Midway Arpt",
       x = wind_direction_airport,
       y = wind_dir_wrapped),
   
   gary$winddir %>%
     transmute(
-      airport = "Gary",
+      airport = "Gary/Chicago Arpt",
       x = wind_direction_airport,
       y = wind_dir_wrapped))
 
-ggplot(
-  winddir_plot_df,
-  aes(x = x, y = y)) +
+p_winddir <- ggplot(winddir_plot_df, aes(x = x, y = y)) +
   geom_point(alpha = 0.5) +
   geom_abline(
     intercept = 0,
     slope = 1,
     linetype = "dashed") +
-  coord_equal() +
+  coord_equal(xlim = c(0, 400), ylim = c(0, 400)) +
   facet_wrap(~ airport) +
   labs(
     x = "Airport Wind Direction (°)",
-    y = "IHSC Wind Direction",
-    title = "Wind Direction Comparison") +
-  theme_minimal()
+    y = "IHSC Wind Direction") +
+  theme_bw()
 
+# Save plots
+ggsave("Output/Plots/MeteoComparison/Comparison_temp2023.png", plot = p_temp,
+       width = 10, height = 5, dpi = 500)
+ggsave("Output/Plots/MeteoComparison/Comparison_windspeed2023.png", plot = p_winspeed,
+       width = 10, height = 5, dpi = 500)
+ggsave("Output/Plots/MeteoComparison/Comparison_winddir2023.png", plot = p_winddir,
+       width = 10, height = 5, dpi = 500)
 

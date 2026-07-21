@@ -220,8 +220,8 @@ p_wind_speed
 p_wind_dir
 
 # 16) Save plots ----------------------------------------------------------
-ggsave("Output/Plots/MeteoComparison/comparison_temp.png", plot = p_temp, width = 5,
-       height = 5, dpi = 500)
+ggsave("Output/Plots/MeteoComparison/comparison_temp.png", plot = p_temp,
+       width = 5, height = 5, dpi = 500)
 ggsave("Output/Plots/MeteoComparison/comparison_windspeed.png", plot = p_wind_speed,
        width = 5, height = 5, dpi = 500)
 ggsave("Output/Plots/MeteoComparison/comparison_winddir.png", plot = p_wind_dir,
