@@ -1,11 +1,7 @@
-# ============================================================
 # NOAA ISD: download 2 stations, compare 2010-2020, and fill
 # missing dates from station 2 with station 1
-# ============================================================
 
-# ------------------------------------------------------------
-# 1) Packages & libraries
-# ------------------------------------------------------------
+# 1) Packages & libraries -------------------------------------------------
 {
   install.packages("rnoaa") # For future use, noaaweather package will need to be installed it.
   install.packages("dplyr")
@@ -23,15 +19,11 @@
   library(patchwork)
 }
 
-# ------------------------------------------------------------
-# 2) Site coordinates
-# ------------------------------------------------------------
+# 2) Site coordinates -----------------------------------------------------
 site_lat <- 41.646490
 site_lon <- -87.473562
 
-# ------------------------------------------------------------
-# 3) Load NOAA ISD station list and inspect nearby stations
-# ------------------------------------------------------------
+# 3) Load NOAA ISD station list and inspect nearby stations ---------------
 stations <- isd_stations()
 
 stations_nearby <- stations %>%
@@ -41,11 +33,9 @@ stations_nearby <- stations %>%
 
 print(stations_nearby)
 
-# ------------------------------------------------------------
-# 4) Select the two stations you want to compare
+# 4) Select the two stations you want to compare --------------------------
 #    Station 1 = backup / earlier station
 #    Station 2 = main station / later station
-# ------------------------------------------------------------
 # CHICAGO MIDWAY INTL ARPT
 station.1 <- stations %>%
   filter(usaf == "725340") %>%
@@ -65,9 +55,7 @@ station.1_wban <- as.character(station.1$wban)
 station.2_usaf <- as.character(station.2$usaf)
 station.2_wban <- as.character(station.2$wban)
 
-# ------------------------------------------------------------
-# 5) Helper function to download ISD data for a range of years
-# ------------------------------------------------------------
+# 5) Helper function to download ISD data for a range of years ------------
 download_isd_years <- function(usaf, wban, years) {
   weather_list <- list()
   
@@ -88,9 +76,7 @@ download_isd_years <- function(usaf, wban, years) {
   bind_rows(weather_list)
 }
 
-# ------------------------------------------------------------
-# 6) Download data for both stations, 2010-2020
-# ------------------------------------------------------------
+# 6) Download data for both stations, 2010-2020 ---------------------------
 years <- 2010:2020
 
 weather1 <- download_isd_years(
@@ -105,9 +91,7 @@ weather2 <- download_isd_years(
   years = years
 )
 
-# ------------------------------------------------------------
-# 7) Helper functions for daily aggregation
-# ------------------------------------------------------------
+# 7) Helper functions for daily aggregation -------------------------------
 circ_mean_deg <- function(x) {
   x <- x[!is.na(x)]
   if (length(x) == 0) return(NA_real_)
@@ -120,9 +104,7 @@ safe_mean <- function(x) {
   mean(x)
 }
 
-# ------------------------------------------------------------
-# 8) Clean and summarize a raw ISD station dataset to daily values
-# ------------------------------------------------------------
+# 8) Clean and summarize a raw ISD station dataset to daily values --------
 prep_daily <- function(df) {
   df %>%
     mutate(
@@ -148,9 +130,7 @@ prep_daily <- function(df) {
     )
 }
 
-# ------------------------------------------------------------
-# 9) Build daily data for each station
-# ------------------------------------------------------------
+# 9) Build daily data for each station ------------------------------------
 daily1 <- prep_daily(weather1) %>%
   filter(date >= as.Date("2010-01-01"), date <= as.Date("2020-12-31")) %>%
   rename_with(~ paste0(.x, "_s1"), -date)
@@ -159,9 +139,7 @@ daily2 <- prep_daily(weather2) %>%
   filter(date >= as.Date("2010-01-01"), date <= as.Date("2020-12-31")) %>%
   rename_with(~ paste0(.x, "_s2"), -date)
 
-# ------------------------------------------------------------
-# 10) Compare stations on overlapping dates
-# ------------------------------------------------------------
+# 10) Compare stations on overlapping dates -------------------------------
 compare_2010_2020 <- full_join(daily1, daily2, by = "date") %>%
   mutate(
     air_temp_diff = air_temp_s2 - air_temp_s1,
@@ -170,9 +148,7 @@ compare_2010_2020 <- full_join(daily1, daily2, by = "date") %>%
   ) %>%
   arrange(date)
 
-# ------------------------------------------------------------
-# 11) Keep only days where BOTH stations have data
-# ------------------------------------------------------------
+# 11) Keep only days where BOTH stations have data ------------------------
 temp_df <- compare_2010_2020 %>%
   filter(!is.na(air_temp_s1), !is.na(air_temp_s2))
 
@@ -200,61 +176,58 @@ wind_dir_df <- compare_2010_2020 %>%
     wind_direction_s2_wrapped = wind_direction_s1 + wd_diff
   )
 
-# ------------------------------------------------------------
-# 12) 1:1 plot helper
-# ------------------------------------------------------------
+# 12) 1:1 plot helper -----------------------------------------------------
 plot_1to1 <- function(df, x, y, xlab, ylab) {
   ggplot(df, aes(x = .data[[x]], y = .data[[y]])) +
     geom_point(alpha = 0.5, size = 1.5) +
     geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
     coord_equal() +
     labs(x = xlab, y = ylab) +
-    theme_minimal()
+    theme_bw()
 }
 
-# ------------------------------------------------------------
-# 13) Temperature and wind speed 1:1 plots
-# ------------------------------------------------------------
+# 13) Temperature and wind speed 1:1 plots --------------------------------
 p_temp <- plot_1to1(
   temp_df,
   x = "air_temp_s1",
   y = "air_temp_s2",
-  xlab = "CHICAGO MIDWAY INTL ARPT Air Temperature",
-  ylab = "GARY/CHICAGO ARPT Air Temperature"
+  xlab = "CHICAGO MIDWAY ARPT: Air Temperature (°C)",
+  ylab = "GARY/CHICAGO ARPT: Air Temperature (°C)"
 )
 
 p_wind_speed <- plot_1to1(
   wind_speed_df,
   x = "wind_speed_s1",
   y = "wind_speed_s2",
-  xlab = "CHICAGO MIDWAY INTL ARPT Wind Speed",
-  ylab = "GARY/CHICAGO ARPT Wind Speed"
+  xlab = "CHICAGO MIDWAY ARPT: Wind Speed (m/s)",
+  ylab = "GARY/CHICAGO ARPT: Wind Speed (m/s)"
 )
 
-# ------------------------------------------------------------
-# 14) Wind direction 1:1 plot using wrapped angles
-# ------------------------------------------------------------
+# 14) Wind direction 1:1 plot using wrapped angles ------------------------
 lims <- c(-180, 400)
 
 p_wind_dir <- ggplot(wind_dir_df, aes(x = wind_direction_s1, y = wind_direction_s2_wrapped)) +
   geom_point(alpha = 0.5, size = 1.5) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   coord_equal(xlim = lims, ylim = lims) +
-  labs(x = "CHICAGO MIDWAY INTL ARPT: Wind direction (degrees)",
+  labs(x = "CHICAGO MIDWAY ARPT: Wind direction (degrees)",
        y = "GARY/CHICAGO ARPT: Wind direction wrapped") +
-  theme_minimal()
+  theme_bw()
 
-# ------------------------------------------------------------
-# 15) Show plots
-# ------------------------------------------------------------
+# 15) Show plots ----------------------------------------------------------
 p_temp
 p_wind_speed
 p_wind_dir
 
-# ------------------------------------------------------------
-# 16) Correlations / summaries
-# ------------------------------------------------------------
+# 16) Save plots ----------------------------------------------------------
+ggsave("Output/Plots/MeteoComparison/comparison_temp.png", plot = p_temp, width = 5,
+       height = 5, dpi = 500)
+ggsave("Output/Plots/MeteoComparison/comparison_windspeed.png", plot = p_wind_speed,
+       width = 5, height = 5, dpi = 500)
+ggsave("Output/Plots/MeteoComparison/comparison_winddir.png", plot = p_wind_dir,
+       width = 5, height = 5, dpi = 500)
 
+# 17) Correlations / summaries --------------------------------------------
 # Correlations
 cor(temp_df$air_temp_s1, temp_df$air_temp_s2, use = "complete.obs")
 cor(wind_speed_df$wind_speed_s1, wind_speed_df$wind_speed_s2, use = "complete.obs")
@@ -289,9 +262,7 @@ mae(temp_df$air_temp_s1, temp_df$air_temp_s2)
 mae(wind_speed_df$wind_speed_s1, wind_speed_df$wind_speed_s2)
 mean(abs(wind_dir_df$wd_diff), na.rm = TRUE)
 
-# ------------------------------------------------------------
-# Summary of station comparison (2010–2020)
-# ------------------------------------------------------------
+# Summary of station comparison (2010–2020) -------------------------------
 # Temperature shows excellent agreement between stations
 # (R ≈ 0.99), with a small negative bias (~ -0.37°C) and
 # relatively low error (MAE ≈ 1.36°C, RMSE ≈ 1.79°C). This
