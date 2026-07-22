@@ -149,7 +149,6 @@ daily_activities <- activity_daily %>%
   left_join(volume_annual_wide, by = "date") %>%
   arrange(date)
 
-
 # Export data
 write.csv(daily_activities, "Data/RemediationActivities/all_activity_daily.csv",
           row.names = FALSE)
