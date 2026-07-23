@@ -16,32 +16,22 @@
 }
 
 # Read data
-dataset <- read.csv("Data/FinalDataset/DatasetV01.csv")
+dataset <- read.csv("Data/FinalDataset/DatasetV02.csv")
 
 dataset <- dataset %>%
-  mutate(date = as.Date(date, format = "%Y-%m-%d")) %>%
   mutate(
-    # There is no distance information about the Mixed location
-    Mixed_South_m = as.numeric(Mixed_South_m),
-    Mixed_HS_m = as.numeric(Mixed_HS_m),
+    date = as.Date(date),
     
-    Activity = case_when(
-      as.character(Idle) == "1" ~ "Idle",
-      as.character(Construction) == "1" ~ "Construction",
-      as.character(Dredging) == "1" ~ "Dredging",
-      TRUE ~ NA_character_
-    ),
-    Activity = factor(Activity, levels = c("Idle", "Construction", "Dredging")),
+    activity = factor(activity, levels = c("Idle", "Construction", "Dredging")),
     
     SourceWind_South = factor(SourceWind_South,
                               levels = c("NonSource", "Source")),
     SourceWind_HS = factor(SourceWind_HS,
                            levels = c("NonSource", "Source"))
-  ) %>%
-  select(-Construction, -Dredging, -Idle)
+  )
 
 # Correlations
-pcb_response <- "PCB31_HS"
+pcb_response <- "PCB8_South"
 response <- paste0("log10_", pcb_response)
 
 # PCB concentration columns only (exclude uncertainty columns)
@@ -120,6 +110,14 @@ top_vars <- cor_table %>%
   slice_head(n = 30) %>%
   pull(Variable)
 
+# Set the x-axis limits
+limits <- dataset %>%
+  summarise(across(all_of(top_vars),
+                   ~ quantile(.x, 0.99, na.rm = TRUE))) %>%
+  pivot_longer(everything(),
+               names_to = "Variable",
+               values_to = "xmax")
+
 # Long format for faceted plots
 plot_df <- dataset %>%
   select(all_of(response), all_of(top_vars)) %>%
@@ -127,17 +125,15 @@ plot_df <- dataset %>%
     cols = -all_of(response),
     names_to = "Variable",
     values_to = "Value"
-  )
+  ) %>%
+  left_join(limits, by = "Variable") %>%
+  filter(Value <= xmax | is.na(xmax))
 
 # Faceted scatterplots
 p <- ggplot(plot_df, aes(x = Value, y = .data[[response]])) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE) +
   facet_wrap(~Variable, scales = "free_x") +
-  labs(
-    x = NULL,
-    y = paste0("log10(", pcb_response, ")")
-  ) +
   theme_bw()
 
 # See plot
@@ -151,7 +147,7 @@ ggsave("Output/Plots/CorrelationAnalysis/cor_PCB31_HS.png", plot = p,
 plot_df <- dataset %>%
   filter(!is.na(.data[[response]]))
 
-ggplot(plot_df, aes(x = Activity, y = .data[[response]])) +
+ggplot(plot_df, aes(x = activity, y = .data[[response]])) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.15, alpha = 0.4, size = 1) +
   labs(
