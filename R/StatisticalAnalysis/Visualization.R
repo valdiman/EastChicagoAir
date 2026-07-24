@@ -15,9 +15,10 @@
   library(tidyr)
 }
 
-# Read data
+# Read data ---------------------------------------------------------------
 dataset <- read.csv("Data/FinalDataset/DatasetV02.csv")
 
+# Format data -------------------------------------------------------------
 dataset <- dataset %>%
   mutate(
     date = as.Date(date),
@@ -30,7 +31,8 @@ dataset <- dataset %>%
                            levels = c("NonSource", "Source"))
   )
 
-# Correlations
+# Correlations ------------------------------------------------------------
+# Select PCB
 pcb_response <- "PCB8_South"
 response <- paste0("log10_", pcb_response)
 
@@ -101,10 +103,11 @@ cor_table <- lapply(keep_vars, function(v) {
 
 cor_table
 
-# Export data
+# Export correlation table ------------------------------------------------
 write.csv(cor_table, "Output/Data/CorrelationAnalysis/cor_PCB31_HS.csv",
           row.names = FALSE)
 
+# Plots -------------------------------------------------------------------
 # Top variables for plotting
 top_vars <- cor_table %>%
   slice_head(n = 30) %>%
@@ -139,11 +142,12 @@ p <- ggplot(plot_df, aes(x = Value, y = .data[[response]])) +
 # See plot
 p
 
-# Save plot
+
+# Save plot ---------------------------------------------------------------
 ggsave("Output/Plots/CorrelationAnalysis/cor_PCB31_HS.png", plot = p,
        width = 10, height = 10, dpi = 500)
 
-# Activities
+# Activities plot ---------------------------------------------------------
 plot_df <- dataset %>%
   filter(!is.na(.data[[response]]))
 
@@ -156,7 +160,11 @@ ggplot(plot_df, aes(x = activity, y = .data[[response]])) +
   ) +
   theme_bw()
 
-# Wind Source
+# Save plot
+ggsave("Output/Plots/CorrelationAnalysis/cor_PCB31_HS.png", plot = p,
+       width = 10, height = 10, dpi = 500)
+
+# Wind source plot --------------------------------------------------------
 plot_df <- dataset %>%
   filter(
     !is.na(.data[[response]]),
@@ -172,5 +180,8 @@ ggplot(plot_df, aes(x = SourceWind_South, y = .data[[response]])) +
   ) +
   theme_bw()
 
+# Save plot
+ggsave("Output/Plots/CorrelationAnalysis/cor_PCB31_HS.png", plot = p,
+       width = 10, height = 10, dpi = 500)
 
 
