@@ -66,7 +66,7 @@ find_single_col <- function(df, pattern, what = "column") {
 }
 
 # Activity dates
-all_dates <- read.csv("Data/RemediationActivities/all_activity_daily.csv")
+all_dates <- read.csv("Data/RemediationActivities/all_activity_dailyV2.csv")
 all_dates$date <- as.Date(all_dates$date, origin = "1899-12-30")
 
 # Download USGS water temperature -----------------------------------------

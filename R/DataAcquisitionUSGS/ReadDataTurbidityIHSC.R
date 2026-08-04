@@ -18,7 +18,7 @@
 }
 
 # Read data ---------------------------------------------------------------
-ace_dates <- read.csv("Data/RemediationActivities/all_activity_daily.csv")
+ace_dates <- read.csv("Data/RemediationActivities/all_activity_dailyV2.csv")
 ace_dates$date <- as.Date(ace_dates$date, origin = "1899-12-30")
 
 # Define USGS site and parameter ------------------------------------------

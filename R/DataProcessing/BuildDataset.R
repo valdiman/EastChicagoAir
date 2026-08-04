@@ -95,20 +95,87 @@ final_data <- final_data %>%
     cos_season = cos(z * day_of_year))
 
 # Source wind indicators --------------------------------------------------
+# The objective of the SourceWind variables is to identify whether the daily
+# wind direction originated from the active contamination/remediation source
+# relative to each monitoring station (South and HS).
+#
+# Because the location of the primary source changes throughout the study,
+# the source wind sector is defined according to the remediation activity
+# occurring on each day:
+#
+#   • Idle:
+#       The source corresponds to the historical contaminated sediment area.
+#
+#   • Dredging:
+#       The same source sector as Idle is used because dredging operations
+#       occurred within the historical contaminated area. The dredging
+#       location varies daily, but the overall source sector relative to
+#       each monitoring station remains within the same angular range.
+#
+#   • Construction:
+#       A different source sector is used because construction activities
+#       occurred in a different area of the canal. The angular limits were
+#       determined from the construction area relative to each monitoring
+#       station using Google Earth Pro bearings.
+#
+# Source sectors (degrees clockwise from north):
+#
+# South station
+#   Idle / Dredging : 35.64° – 121.94°
+#   Construction    : 335.93° – 73.42° (wraps across north)
+#
+# HS station
+#   Idle / Dredging : 352.16° – 96.12° (wraps across north)
+#   Construction    : 354.92° – 31.39° (wraps across north)
+#
+# Wind sectors that cross north (0°/360°) are evaluated using:
+#   wind_direction >= lower_limit OR wind_direction <= upper_limit
+#
+# The resulting variables (SourceWind_South and SourceWind_HS) indicate
+# whether the wind originated from the active source sector ("Source") or
+# from any other direction ("NonSource") for the corresponding day's activity.
+
 final_data <- final_data %>%
   mutate(
-    SourceWind_South = factor(
-      ifelse(
-        between(wind_direction, 30, 90),
-        "Source",
-        "NonSource"),
-      levels = c("NonSource", "Source")),  # NonSource is the reference,
-    SourceWind_HS = factor(
-      ifelse(
-        between(wind_direction, 0, 70),
-        "Source",
-        "NonSource"),
-      levels = c("NonSource", "Source")))  # NonSource is the reference
+    SourceWind_South = case_when(
+      is.na(wind_direction) ~ NA_character_,
+      
+      activity == "Idle" &
+        between(wind_direction, 35.64, 121.94) ~ "Idle_Source",
+      activity == "Idle" ~ "Idle_NonSource",
+      
+      activity == "Dredging" &
+        between(wind_direction, 35.64, 121.94) ~ "Dredging_Source",
+      activity == "Dredging" ~ "Dredging_NonSource",
+      
+      activity == "Construction" &
+        (wind_direction >= 335.93 | wind_direction <= 73.42) ~ "Construction_Source",
+      activity == "Construction" ~ "Construction_NonSource",
+      
+      TRUE ~ NA_character_
+    )
+  )
+
+final_data <- final_data %>%
+  mutate(
+    SourceWind_HS = case_when(
+      is.na(wind_direction) ~ NA_character_,
+      
+      activity == "Idle" &
+        (wind_direction >= 352.16 | wind_direction <= 96.12) ~ "Idle_Source",
+      activity == "Idle" ~ "Idle_NonSource",
+      
+      activity == "Dredging" &
+        (wind_direction >= 352.16 | wind_direction <= 96.12) ~ "Dredging_Source",
+      activity == "Dredging" ~ "Dredging_NonSource",
+      
+      activity == "Construction" &
+        (wind_direction >= 354.92 | wind_direction <= 31.39) ~ "Construction_Source",
+      activity == "Construction" ~ "Construction_NonSource",
+      
+      TRUE ~ NA_character_
+    )
+  )
 
 # Export data
 write.csv(final_data, "Data/FinalDataset/DatasetV02.csv",

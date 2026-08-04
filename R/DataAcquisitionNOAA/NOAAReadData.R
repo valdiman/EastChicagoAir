@@ -50,7 +50,7 @@ station1 <- stations %>% filter(usaf == "725340")
 station2 <- stations %>% filter(usaf == "725337")
 
 # Activity dates
-all_dates <- read.csv("Data/RemediationActivities/all_activity_daily.csv")
+all_dates <- read.csv("Data/RemediationActivities/all_activity_dailyV2.csv")
 all_dates$date <- as.Date(all_dates$date, origin = "1899-12-30")
 
 # Helper function

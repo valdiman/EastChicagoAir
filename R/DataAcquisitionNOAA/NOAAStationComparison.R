@@ -155,16 +155,17 @@ temp_df <- compare_2010_2020 %>%
 wind_speed_df <- compare_2010_2020 %>%
   filter(!is.na(wind_speed_s1), !is.na(wind_speed_s2))
 
-# Wind direction is a circular variable (0° = 360°), so direct comparisons
-# using raw degrees can be misleading near the wrap-around boundary. For example,
-# 5° and 355° are only 10° apart in reality, but appear far apart numerically.
-# To address this, we compute the circular difference between stations and
-# “wrap” the wind direction from station 2 so that it represents the closest
-# equivalent angle to station 1. This effectively removes the discontinuity
-# at 0/360° and allows for meaningful 1:1 comparisons. Station 1 is used as
-# the reference, so station 2 is shifted accordingly; this is a convention and
-# does not alter the physical interpretation of the data, only its representation
-# for comparison purposes.
+# Wind direction is a circular variable (0° ≡ 360°), so direct comparisons
+# using raw angles can be misleading near the wrap-around boundary. For example,
+# wind directions of 5° and 355° differ by only 10°, although their numerical
+# values differ by 350°. To avoid this discontinuity, the minimum circular
+# difference between the two stations is first computed (range: -180° to 180°).
+# The wind direction from Station 2 is then wrapped to the closest equivalent
+# angle relative to Station 1, which is treated as the reference. This
+# transformation does not change the physical wind direction; it only changes
+# its numerical representation, allowing direct 1:1 comparisons and regression
+# analyses between the two stations without artifacts caused by the 0°/360°
+# boundary.
 
 wind_dir_df <- compare_2010_2020 %>%
   filter(!is.na(wind_direction_s1), !is.na(wind_direction_s2)) %>%
