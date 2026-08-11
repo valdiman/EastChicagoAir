@@ -94,46 +94,34 @@ final_data <- final_data %>%
     sin_season = sin(z * day_of_year),
     cos_season = cos(z * day_of_year))
 
-# Source wind indicators --------------------------------------------------
-# The objective of the SourceWind variables is to identify whether the daily
-# wind direction originated from the active contamination/remediation source
-# relative to each monitoring station (South and HS).
+# Activity-based source wind indicators -----------------------------------
 #
-# Because the location of the primary source changes throughout the study,
-# the source wind sector is defined according to the remediation activity
-# occurring on each day:
+# These variables classify wind direction according to the remediation
+# activity occurring on each day. They provide a consistent source/non-source
+# indicator for the full study period.
 #
-#   • Idle:
-#       The source corresponds to the historical contaminated sediment area.
+# Idle:
+#   Historical contaminated sediment area.
 #
-#   • Dredging:
-#       The same source sector as Idle is used because dredging operations
-#       occurred within the historical contaminated area. The dredging
-#       location varies daily, but the overall source sector relative to
-#       each monitoring station remains within the same angular range.
+# Dredging:
+#   Historical/dredging source sector. This is a broad sector and does not
+#   use the daily dredging GPS location.
 #
-#   • Construction:
-#       A different source sector is used because construction activities
-#       occurred in a different area of the canal. The angular limits were
-#       determined from the construction area relative to each monitoring
-#       station using Google Earth Pro bearings.
+# Construction:
+#   Construction-specific source sector based on the construction location.
 #
 # Source sectors (degrees clockwise from north):
 #
-# South station
-#   Idle / Dredging : 35.64° – 121.94°
-#   Construction    : 335.93° – 73.42° (wraps across north)
+# South:
+#   Idle / Dredging = 35.64°–121.94°
+#   Construction    = 335.93°–73.42° (wraps across 0°)
 #
-# HS station
-#   Idle / Dredging : 352.16° – 96.12° (wraps across north)
-#   Construction    : 354.92° – 31.39° (wraps across north)
+# HS:
+#   Idle / Dredging = 352.16°–96.12° (wraps across 0°)
+#   Construction    = 354.92°–31.39° (wraps across 0°)
 #
-# Wind sectors that cross north (0°/360°) are evaluated using:
-#   wind_direction >= lower_limit OR wind_direction <= upper_limit
-#
-# The resulting variables (SourceWind_South and SourceWind_HS) indicate
-# whether the wind originated from the active source sector ("Source") or
-# from any other direction ("NonSource") for the corresponding day's activity.
+# The resulting variables identify whether wind was Source or NonSource
+# for the activity occurring on that day.
 
 final_data <- final_data %>%
   mutate(
@@ -148,8 +136,9 @@ final_data <- final_data %>%
         between(wind_direction, 35.64, 121.94) ~ "Dredging_Source",
       activity == "Dredging" ~ "Dredging_NonSource",
       
+      # Construction: wind from approximately north (0° ± 30°)
       activity == "Construction" &
-        (wind_direction >= 335.93 | wind_direction <= 73.42) ~ "Construction_Source",
+        (wind_direction >= 330 | wind_direction <= 30) ~ "Construction_Source",
       activity == "Construction" ~ "Construction_NonSource",
       
       TRUE ~ NA_character_
@@ -169,14 +158,57 @@ final_data <- final_data %>%
         (wind_direction >= 352.16 | wind_direction <= 96.12) ~ "Dredging_Source",
       activity == "Dredging" ~ "Dredging_NonSource",
       
+      # Construction: wind from approximately north (0° ± 30°)
       activity == "Construction" &
-        (wind_direction >= 354.92 | wind_direction <= 31.39) ~ "Construction_Source",
+        (wind_direction >= 330 | wind_direction <= 30) ~ "Construction_Source",
       activity == "Construction" ~ "Construction_NonSource",
       
       TRUE ~ NA_character_
     )
   )
 
+# Dredging-specific location and wind exposure -----------------------------
+#
+# These variables use the daily dredging location estimated from the midpoint
+# between Buoy 1 and Buoy 2. Distances are calculated from the estimated
+# dredging location to South and HS. Source bearings are calculated from each
+# sampling location toward the estimated dredging location, so they can be
+# compared directly with meteorological wind direction (which represents the
+# direction the wind is coming from).
+#
+# The continuous wind-angle variables represent the circular difference
+# between the observed wind direction and the direction toward the dredging
+# location. Smaller values indicate stronger alignment between the wind and
+# potential transport from dredging toward the sampling location.
+#
+# DredgingSource_South and DredgingSource_HS classify dredging as Source when
+# the wind-angle is within the selected 30-degree threshold. "NoDredging"
+# indicates that dredging was not occurring on that date.
+
+dredge_wind_daily <- read.csv("Data/RemediationActivities/dredge_wind_daily.csv")
+dredge_wind_daily$date <- as.Date(dredge_wind_daily$date)
+
+final_data <- final_data %>%
+  left_join(
+    dredge_wind_daily %>%
+      select(
+        date,
+        n_gps,
+        n_turb,
+        dredge_lat,
+        dredge_lon,
+        dredging_distance_to_South_m,
+        dredging_distance_to_HS_m,
+        dredging_source_bearing_South,
+        dredging_source_bearing_HS,
+        dredging_wind_angle_South,
+        dredging_wind_angle_HS,
+        DredgingSource_South,
+        DredgingSource_HS
+      ),
+    by = "date"
+  )
+
 # Export data
-write.csv(final_data, "Data/FinalDataset/DatasetV02.csv",
+write.csv(final_data, "Data/FinalDataset/DatasetV03.csv",
           row.names = FALSE)
