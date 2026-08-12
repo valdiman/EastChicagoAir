@@ -461,32 +461,40 @@ dredge_wind_daily %>%
     activity,
     daily_volume_yd3,
     
-    n_turb,
+    # Quality control
     n_gps,
     location_quality,
     
+    # Dredging turbidity
     turb_dredge_mean,
     turb_dredge_min,
     turb_dredge_max,
     
-    dredge_lat,
-    dredge_lon,
-    
+    # South
     dredging_distance_to_South_m,
-    dredging_source_bearing_South,
-    wind_direction,
-    wind_speed,
     dredging_wind_angle_South,
     DredgingSource_South,
     
+    # HS
     dredging_distance_to_HS_m,
-    dredging_source_bearing_HS,
     dredging_wind_angle_HS,
     DredgingSource_HS
   ) %>%
   print(n = 20)
 
+# Create final dredging wind dataset --------------------------------------
+final_data <- dredge_wind_daily %>%
+  select(
+    date,
+    n_gps,
+    location_quality,
+    dredging_wind_angle_South,
+    DredgingSource_South,
+    dredging_wind_angle_HS,
+    DredgingSource_HS
+  )
+
 # Save ---------------------------------------------------------------------
-write.csv(dredge_wind_daily,"Data/RemediationActivities/dredge_wind_daily.csv",
+write.csv(final_data,"Data/RemediationActivities/dredge_wind_daily.csv",
           row.names = FALSE)
 

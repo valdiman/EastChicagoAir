@@ -194,13 +194,6 @@ final_data <- final_data %>%
       select(
         date,
         n_gps,
-        n_turb,
-        dredge_lat,
-        dredge_lon,
-        dredging_distance_to_South_m,
-        dredging_distance_to_HS_m,
-        dredging_source_bearing_South,
-        dredging_source_bearing_HS,
         dredging_wind_angle_South,
         dredging_wind_angle_HS,
         DredgingSource_South,
