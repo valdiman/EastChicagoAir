@@ -226,7 +226,6 @@ dredge_daily <- dredge_turb %>%
     } else {
       NA_real_
     },
-    
     turb_dredge_max = if (n_turb > 0) {
       max(
         DredgeContribution,
@@ -238,7 +237,6 @@ dredge_daily <- dredge_turb %>%
     
     # Daily representative dredging location
     dredge_lat = safe_median(dredge_lat),
-    
     dredge_lon = safe_median(dredge_lon),
     
     # Daily representative distance
@@ -246,12 +244,10 @@ dredge_daily <- dredge_turb %>%
       safe_median(
         dredging_distance_to_South_m
       ),
-    
     dredging_distance_to_HS_m =
       safe_median(
         dredging_distance_to_HS_m
       ),
-    
     .groups = "drop"
   )
 
@@ -262,7 +258,6 @@ dredge_daily <- dredge_turb %>%
 
 dredge_daily <- dredge_daily %>%
   mutate(
-    
     dredging_source_bearing_South = if_else(
       !is.na(dredge_lat) &
         !is.na(dredge_lon),
@@ -295,12 +290,9 @@ dredge_daily <- dredge_daily %>%
   )
 
 # Read daily meteorological data -------------------------------------------
-meteo_data <- read.csv(
-  "Data/Meteorology/MeteoEC.csv")
+meteo_data <- read.csv("Data/Meteorology/MeteoEC.csv")
 
-meteo_data$date <- as.Date(
-  meteo_data$date,
-  origin = "1899-12-30")
+meteo_data$date <- as.Date(meteo_data$date, origin = "1899-12-30")
 
 # Add meteorological variables ---------------------------------------------
 dredge_wind_daily <- dredge_daily %>%
@@ -321,13 +313,13 @@ dredge_wind_daily <- dredge_daily %>%
 dredge_wind_daily <- dredge_wind_daily %>%
   mutate(
     
-    dredging_wind_angle_South =
+    dredging_wind_alignment_South_deg =
       angle_diff(
         wind_direction,
         dredging_source_bearing_South
       ),
     
-    dredging_wind_angle_HS =
+    dredging_wind_alignment_HS_deg =
       angle_diff(
         wind_direction,
         dredging_source_bearing_HS
@@ -335,14 +327,9 @@ dredge_wind_daily <- dredge_wind_daily %>%
   )
 
 # Read daily remediation activity data -------------------------------------
-activity_daily <- read.csv(
-  "Data/RemediationActivities/all_activity_dailyV2.csv")
-
-activity_daily$date <- as.Date(
-  activity_daily$date)
-
-activity_daily$activity <- factor(
-  activity_daily$activity)
+activity_daily <- read.csv("Data/RemediationActivities/all_activity_dailyV2.csv")
+activity_daily$date <- as.Date(activity_daily$date)
+activity_daily$activity <- factor(activity_daily$activity)
 
 # Add activity and daily dredged volume ------------------------------------
 dredge_wind_daily <- dredge_wind_daily %>%
@@ -350,67 +337,83 @@ dredge_wind_daily <- dredge_wind_daily %>%
     activity_daily %>%
       select(
         date,
-        activity,
-        daily_volume_yd3
-      ),
-    by = "date"
-  )
+        activity),
+    by = "date")
 
-# Classify dredging as a potential source ----------------------------------
-# DredgingSource variables use the actual daily dredging location and the
-# observed wind direction.
+# Classify dredging-specific source wind -----------------------------------
+# DredgingSourceWind variables identify whether wind conditions were
+# consistent with transport from the estimated daily dredging location
+# toward each air monitoring station (South and HS).
 #
-# NoDredging:
-#   No dredging was occurring on that date.
+# The daily dredging location is estimated from the midpoint between the
+# upstream and downstream buoy GPS positions. For each station, the direction
+# from the station toward the estimated dredging location is compared with
+# the observed meteorological wind direction.
 #
-# Source:
-#   Dredging was occurring and wind direction was within the source-angle
-#   threshold relative to the estimated dredging location.
+# dredging_wind_alignment_*_deg is the absolute circular angular difference
+# between these two directions and ranges from 0 to 180 degrees:
 #
-# NonSource:
-#   Dredging was occurring but wind direction was outside the threshold.
+#   0 degrees   = wind coming directly from the dredging location
+#                 toward the monitoring station (maximum alignment)
+#   90 degrees  = approximately crosswind
+#   180 degrees = wind coming from the opposite direction
 #
-# NA:
-#   Dredging was occurring, but wind direction and/or dredging location
-#   could not be determined.
+# A source-angle threshold is used to convert the continuous alignment
+# measure into a categorical dredging-source indicator. The primary
+# classification uses +/- 30 degrees. Alternative thresholds (e.g.,
+# +/- 15 and +/- 45 degrees) can be evaluated in sensitivity analyses.
+#
+# Categories:
+#
+#   NoDredging = no dredging occurred on that date.
+#
+#   Source = dredging occurred and the wind-direction difference was
+#            <= source_angle, indicating wind aligned with transport
+#            from the dredging location toward the monitoring station.
+#
+#   NonSource = dredging occurred but the wind-direction difference was
+#               > source_angle.
+#
+#   NA = dredging occurred, but the classification could not be determined
+#        because wind direction and/or dredging location was unavailable.
 
-source_angle <- 30 # 15, 45
+source_angle <- 30  # Primary threshold; sensitivity: 15, 45 degrees
 
 dredge_wind_daily <- dredge_wind_daily %>%
   mutate(
     
-    DredgingSource_South = case_when(
+    DredgingSourceWind_South = case_when(
       
       activity != "Dredging" ~
         "NoDredging",
       
-      is.na(dredging_wind_angle_South) ~
+      is.na(dredging_wind_alignment_South_deg) ~
         NA_character_,
       
-      dredging_wind_angle_South <= source_angle ~
+      dredging_wind_alignment_South_deg <= source_angle ~
         "Source",
       
       TRUE ~
         "NonSource"
     ),
     
-    DredgingSource_HS = case_when(
+    DredgingSourceWind_HS = case_when(
       
       activity != "Dredging" ~
         "NoDredging",
       
-      is.na(dredging_wind_angle_HS) ~
+      is.na(dredging_wind_alignment_HS_deg) ~
         NA_character_,
       
-      dredging_wind_angle_HS <= source_angle ~
+      dredging_wind_alignment_HS_deg <= source_angle ~
         "Source",
       
       TRUE ~
         "NonSource"
     ),
     
-    DredgingSource_South = factor(
-      DredgingSource_South,
+    DredgingSourceWind_South = factor(
+      DredgingSourceWind_South,
       levels = c(
         "NoDredging",
         "NonSource",
@@ -418,8 +421,8 @@ dredge_wind_daily <- dredge_wind_daily %>%
       )
     ),
     
-    DredgingSource_HS = factor(
-      DredgingSource_HS,
+    DredgingSourceWind_HS = factor(
+      DredgingSourceWind_HS,
       levels = c(
         "NoDredging",
         "NonSource",
@@ -459,7 +462,6 @@ dredge_wind_daily %>%
   select(
     date,
     activity,
-    daily_volume_yd3,
     
     # Quality control
     n_gps,
@@ -472,13 +474,13 @@ dredge_wind_daily %>%
     
     # South
     dredging_distance_to_South_m,
-    dredging_wind_angle_South,
-    DredgingSource_South,
+    dredging_wind_alignment_South_deg,
+    DredgingSourceWind_South,
     
     # HS
     dredging_distance_to_HS_m,
-    dredging_wind_angle_HS,
-    DredgingSource_HS
+    dredging_wind_alignment_HS_deg,
+    DredgingSourceWind_HS
   ) %>%
   print(n = 20)
 
@@ -488,10 +490,10 @@ final_data <- dredge_wind_daily %>%
     date,
     n_gps,
     location_quality,
-    dredging_wind_angle_South,
-    DredgingSource_South,
-    dredging_wind_angle_HS,
-    DredgingSource_HS
+    dredging_wind_alignment_South_deg,
+    DredgingSourceWind_South,
+    dredging_wind_alignment_HS_deg,
+    DredgingSourceWind_HS
   )
 
 # Save ---------------------------------------------------------------------
