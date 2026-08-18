@@ -199,6 +199,38 @@ dredge_daily <- dredge_turb %>%
   group_by(date) %>%
   summarize(
     
+    # Daily data-availability / quality-control indicators ---------------------
+    #
+    # The ACE water-quality files contain measurements at approximately
+    # 15-minute intervals, corresponding to a maximum of about 96 observations
+    # per complete day (24 hours x 4 observations per hour).
+    #
+    # n_turb:
+    #   Number of valid (non-missing) DredgeContribution observations available
+    #   for the day. This variable describes the amount of information supporting
+    #   the daily dredging-related turbidity statistics (mean, minimum, and
+    #   maximum). A value of 96 represents approximately complete daily coverage,
+    #   whereas lower values indicate partial coverage. A value of 0 indicates
+    #   that no valid DredgeContribution measurements were available that day.
+    #
+    # n_gps:
+    #   Number of observations for which a valid dredging location could be
+    #   estimated from the midpoint between Buoy 1 and Buoy 2. A valid midpoint
+    #   requires usable latitude and longitude information from both buoys.
+    #   This variable therefore describes the amount of GPS information supporting
+    #   the estimated daily dredging location, distance to South/HS, source
+    #   bearing, and dredging-wind alignment calculations.
+    #
+    # n_turb and n_gps are evaluated independently. A day may therefore have
+    # valid GPS information but no valid DredgeContribution measurements, or
+    # vice versa. Missing turbidity measurements do not automatically imply that
+    # the dredging location is unavailable, and missing GPS information does not
+    # automatically imply that dredging did not occur.
+    #
+    # These variables are retained as quality-control indicators and can be used
+    # in sensitivity analyses to assess whether results depend on the amount of
+    # daily observational coverage.
+    
     # Number of valid turbidity measurements
     n_turb = sum(!is.na(DredgeContribution)),
     
