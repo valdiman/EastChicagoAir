@@ -13,175 +13,96 @@
   library(dplyr)
   library(ggplot2)
   library(tidyr)
+  library(plotly) # 3D plots
 }
 
 # Read data ---------------------------------------------------------------
-dataset <- read.csv("Data/FinalDataset/DatasetV02.csv")
+dataset <- read.csv("Data/FinalDataset/DatasetV03.csv")
 
 # Format data -------------------------------------------------------------
 dataset <- dataset %>%
   mutate(
     date = as.Date(date),
-    
     activity = factor(activity, levels = c("Idle", "Construction", "Dredging")),
-    
-    SourceWind_South = factor(SourceWind_South,
-                              levels = c("NonSource", "Source")),
-    SourceWind_HS = factor(SourceWind_HS,
-                           levels = c("NonSource", "Source"))
-  )
+    HistoricalSourceWind_South = factor(HistoricalSourceWind_South,
+                                        levels = c("NonSource", "Source")),
+    HistoricalSourceWind_HS = factor(HistoricalSourceWind_HS,
+                                     levels = c("NonSource", "Source")),
+    ConstructionSourceWind_South = factor(ConstructionSourceWind_South,
+                                          levels = c("NoConstruction", "NonSource", "Source")),
+    ConstructionSourceWind_HS = factor(ConstructionSourceWind_HS,
+                                       levels = c("NoConstruction", "NonSource", "Source")),
+    DredgingSourceWind_South = factor(DredgingSourceWind_South,
+                                      levels = c("NoDredging", "NonSource", "Source")),
+    DredgingSourceWind_HS = factor(DredgingSourceWind_HS,
+                                  levels = c("NoDredging", "NonSource", "Source"))
+    )
 
-# Correlations ------------------------------------------------------------
-# Select PCB
-pcb_response <- "PCB8_South"
-response <- paste0("log10_", pcb_response)
+ggplot(dataset, aes(x = activity, y = PCB8_South, fill = activity)) +
+  geom_boxplot(na.rm = TRUE) +
+  labs(
+    x = "Harbor activity",
+    y = "PCB8 concentration",
+    title = "PCB8 concentrations at South by harbor activity"
+  ) +
+  theme_minimal()
 
-# PCB concentration columns only (exclude uncertainty columns)
-pcb_cols <- names(dataset)[grepl("^PCB", names(dataset)) & !grepl("_unc", names(dataset))]
+ggplot(dataset, aes(x = activity, y = PCB8_HS, fill = activity)) +
+  geom_boxplot(na.rm = TRUE) +
+  labs(
+    x = "Harbor activity",
+    y = "PCB8 concentration",
+    title = "PCB8 concentrations at HS by harbor activity"
+  ) +
+  theme_minimal()
 
-# Create log10 versions of PCB concentrations
-dataset <- dataset %>%
-  mutate(across(
-    all_of(pcb_cols),
-    ~ if_else(.x > 0, log10(.x), NA_real_),
-    .names = "log10_{.col}"
-  ))
-
-# Numeric variables in the dataset
-numeric_names <- names(dataset)[sapply(dataset, is.numeric)]
-
-# Use non-PCB numeric variables as-is
-non_pcb_vars <- setdiff(numeric_names, pcb_cols)
-
-# Use log10 versions for PCB predictors, but exclude the response itself
-pcb_log_vars <- paste0("log10_", setdiff(pcb_cols, pcb_response))
-
-# Candidate predictors
-candidate_vars <- c(non_pcb_vars, pcb_log_vars)
-candidate_vars <- setdiff(candidate_vars, response)
-
-# Count paired non-missing observations with the response
-pair_counts <- sapply(candidate_vars, function(v) {
-  sum(complete.cases(dataset[[response]], dataset[[v]]))
-})
-
-# Keep variables with at least 20 paired observations
-keep_vars <- names(pair_counts[pair_counts >= 20])
-
-# Build correlation table
-cor_table <- lapply(keep_vars, function(v) {
-  
-  x <- dataset[[v]]
-  ok <- complete.cases(dataset[[response]], x)
-  
-  if (sum(ok) < 20 ||
-      sd(dataset[[response]][ok]) == 0 ||
-      sd(x[ok]) == 0) {
-    return(NULL)
-  }
-  
-  test <- cor.test(
-    dataset[[response]][ok],
-    x[ok],
-    method = "pearson"
-  )
-  
-  data.frame(
-    Variable = v,
-    N = sum(ok),
-    Correlation = unname(test$estimate),
-    p.value = test$p.value
-  )
-  
-}) %>%
-  bind_rows() %>%
-  arrange(desc(abs(Correlation))) %>%
-  mutate(
-    Correlation = round(Correlation, 3),
-    p.value = signif(p.value, 3)
-  )
-
-cor_table
-
-# Export correlation table ------------------------------------------------
-write.csv(cor_table, "Output/Data/CorrelationAnalysis/cor_PCB31_HS.csv",
-          row.names = FALSE)
-
-# Plots -------------------------------------------------------------------
-# Top variables for plotting
-top_vars <- cor_table %>%
-  slice_head(n = 30) %>%
-  pull(Variable)
-
-# Set the x-axis limits
-limits <- dataset %>%
-  summarise(across(all_of(top_vars),
-                   ~ quantile(.x, 0.99, na.rm = TRUE))) %>%
-  pivot_longer(everything(),
-               names_to = "Variable",
-               values_to = "xmax")
-
-# Long format for faceted plots
-plot_df <- dataset %>%
-  select(all_of(response), all_of(top_vars)) %>%
+pcb_long <- dataset %>%
+  select(date, activity, PCB8_South, PCB8_HS) %>%
   pivot_longer(
-    cols = -all_of(response),
-    names_to = "Variable",
-    values_to = "Value"
-  ) %>%
-  left_join(limits, by = "Variable") %>%
-  filter(Value <= xmax | is.na(xmax))
-
-# Faceted scatterplots
-p <- ggplot(plot_df, aes(x = Value, y = .data[[response]])) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~Variable, scales = "free_x") +
-  theme_bw()
-
-# See plot
-p
-
-
-# Save plot ---------------------------------------------------------------
-ggsave("Output/Plots/CorrelationAnalysis/cor_PCB31_HS.png", plot = p,
-       width = 10, height = 10, dpi = 500)
-
-# Activities plot ---------------------------------------------------------
-plot_df <- dataset %>%
-  filter(!is.na(.data[[response]]))
-
-ggplot(plot_df, aes(x = activity, y = .data[[response]])) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(width = 0.15, alpha = 0.4, size = 1) +
-  labs(
-    x = "Activity",
-    y = paste0("log10(", pcb_response, ")")
-  ) +
-  theme_bw()
-
-# Save plot
-ggsave("Output/Plots/CorrelationAnalysis/cor_PCB31_HS.png", plot = p,
-       width = 10, height = 10, dpi = 500)
-
-# Wind source plot --------------------------------------------------------
-plot_df <- dataset %>%
-  filter(
-    !is.na(.data[[response]]),
-    !is.na(SourceWind_South)
+    cols = c(PCB8_South, PCB8_HS),
+    names_to = "Location",
+    values_to = "PCB8"
   )
 
-ggplot(plot_df, aes(x = SourceWind_South, y = .data[[response]])) +
-  geom_boxplot() +
-  geom_jitter(width = 0.15, alpha = 0.4) +
+ggplot(pcb_long, aes(x = activity, y = PCB8, fill = Location)) +
+  geom_boxplot(na.rm = TRUE, position = position_dodge()) +
   labs(
-    x = "Wind Direction",
-    y = paste0("log10(", pcb_response, ")")
+    x = "Harbor activity",
+    y = "PCB8 concentration",
+    title = "PCB8 concentrations by activity and monitoring location"
   ) +
-  theme_bw()
+  theme_minimal()
 
-# Save plot
-ggsave("Output/Plots/CorrelationAnalysis/cor_PCB31_HS.png", plot = p,
-       width = 10, height = 10, dpi = 500)
+d_south <- dataset %>%
+  select(
+    date,
+    activity,
+    ConstructionSourceWind_South,
+    PCB8_South
+  ) %>%
+  filter(
+    !is.na(ConstructionSourceWind_South),
+    !is.na(PCB8_South)
+  )
 
-
+ggplot(
+  d_south,
+  aes(
+    x = ConstructionSourceWind_South,
+    y = PCB8_South,
+    fill = ConstructionSourceWind_South
+  )
+) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+  geom_jitter(
+    width = 0.15,
+    alpha = 0.5,
+    size = 2
+  ) +
+  labs(
+    x = "Construction source wind at South",
+    y = "PCB8 concentration",
+    title = "PCB8 Concentrations at South by Historical Source Wind"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
