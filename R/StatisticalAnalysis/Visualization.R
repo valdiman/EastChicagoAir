@@ -7,6 +7,7 @@
   install.packages("ggplot")
   install.packages("tidyr")
   install.packages("plotly")
+  install.packages("ggeffects")
 }
 
 # Library
@@ -15,6 +16,9 @@
   library(ggplot2)
   library(tidyr)
   library(plotly) # 3D plots
+  library(ggeffects)
+  library(purrr)
+  library(broom)
 }
 
 # Read data ---------------------------------------------------------------
@@ -694,9 +698,6 @@ m_idle_south_pcb8 <- lm(
 
 summary(m_idle_south_pcb8)
 
-install.packages("ggeffects")
-library(ggeffects)
-
 pred <- ggpredict(
   m_idle_south_pcb8,
   terms = "HistoricalSourceWind"
@@ -784,10 +785,6 @@ summary(m_idle_south_pcb8_quad)
   "HistoricalSourceWindSource",
 ]
 
-library(dplyr)
-library(tidyr)
-library(purrr)
-library(broom)
 
 idle_models <- pcb_long_cov %>%
   filter(
@@ -813,6 +810,9 @@ idle_models <- pcb_long_cov %>%
       )
     )
   )
+
+
+
 
 source_effects <- idle_models %>%
   mutate(
@@ -877,55 +877,3 @@ ggplot(
   ) +
   theme_bw(base_size = 13)
 
-dredge_pcb <- pcb_long_cov %>%
-  filter(activity == "Dredging") %>%
-  mutate(
-    DredgingSourceWind = case_when(
-      location == "South" ~
-        as.character(dataset$DredgingSourceWind_South[
-          match(date, dataset$date)
-        ]),
-      
-      location == "HS" ~
-        as.character(dataset$DredgingSourceWind_HS[
-          match(date, dataset$date)
-        ])
-    ),
-    DredgingSourceWind = factor(
-      DredgingSourceWind,
-      levels = c("NonSource", "Source")
-    )
-  ) %>%
-  filter(
-    !is.na(concentration),
-    !is.na(DredgingSourceWind)
-  )
-
-DredgingSourceWind = case_when(
-  location == "South" ~
-    as.character(DredgingSourceWind_South),
-  
-  location == "HS" ~
-    as.character(DredgingSourceWind_HS)
-),
-
-dredging_wind_alignment_deg = case_when(
-  location == "South" ~
-    dredging_wind_alignment_South_deg,
-  
-  location == "HS" ~
-    dredging_wind_alignment_HS_deg
-),
-
-dredging_distance_m = case_when(
-  location == "South" ~
-    dredging_distance_to_South_m,
-  
-  location == "HS" ~
-    dredging_distance_to_HS_m
-),
-
-DredgingSourceWind = factor(
-  DredgingSourceWind,
-  levels = c("NonSource", "Source")
-)
