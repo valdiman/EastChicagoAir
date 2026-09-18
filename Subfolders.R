@@ -1,5 +1,6 @@
 # Code to create sub folders
 
+# R
 dir.create("R")
 dir.create("R/RemediationActivities")
 dir.create("R/AirConcCalculations")
@@ -17,6 +18,7 @@ dir.create("R/Extra/SoilAirExchange")
 dir.create("R/ParPreCalculations")
 dir.create("R/StatisticalAnalysis")
 
+# Data
 dir.create("Data")
 dir.create("Data/ACE")
 dir.create("Data/Air")
@@ -35,6 +37,7 @@ dir.create("Data/PCProperties")
 dir.create("Data/RemediationActivities")
 dir.create("Data/USGS")
 
+# Output/Data
 dir.create("Output")
 dir.create("Output/Data")
 dir.create("Output/Data/Air")
@@ -53,11 +56,14 @@ dir.create("Output/PUFPASModel/Meteo/MERRA")
 dir.create("Output/PUFPASModel/Vef")
 dir.create("Output/PUFPASModel/Vef/isd_light")
 dir.create("Output/PUFPASModel/Vef/MERRA")
+
+# Output/Plots
 dir.create("Output/Plots")
 dir.create("Output/Plots/Concentrations")
 dir.create("Output/Plots/CorrelationAnalysis")
 dir.create("Output/Plots/Extra")
 dir.create("Output/Plots/MeteoComparison")
 dir.create("Output/Plots/PartialPressure")
+dir.create("Output/Plots/WindRoseStyle")
 
 
