@@ -4,10 +4,12 @@
 # Install packages
 {
   install.packages("dplyr")
-  install.packages("ggplot")
+  install.packages("ggplot2")
   install.packages("tidyr")
   install.packages("plotly")
   install.packages("ggeffects")
+  install.packages("purrr")
+  install.packages("broom")
   install.packages("openair")
 }
 
@@ -16,11 +18,11 @@
   library(dplyr)
   library(ggplot2)
   library(tidyr)
-  library(plotly) # 3D plots
-  library(ggeffects)
-  library(purrr)
-  library(broom)
-  library(openair)
+  library(plotly)      # Interactive / 3D plots
+  library(ggeffects)   # Model predictions
+  library(purrr)       # Functional programming / model iteration
+  library(broom)       # Tidy model outputs
+  library(openair)     # Pollution roses / wind analyses
 }
 
 # Read data ---------------------------------------------------------------
@@ -44,7 +46,6 @@ dataset <- dataset %>%
     DredgingSourceWind_HS = factor(DredgingSourceWind_HS,
                                    levels = c("NoDredging", "NonSource", "Source"))
   )
-
 
 # 2-D plots ---------------------------------------------------------------
 plot_dat <- dataset %>%
@@ -111,7 +112,7 @@ plot2_dat <- dataset %>%
     !is.na(HistoricalSourceWind)
   )
 
-ggplot(
+bplot.act.PCB8 <- ggplot(
   plot2_dat,
   aes(
     x = activity,
@@ -141,6 +142,15 @@ ggplot(
     fill = "Historical source wind",
     color = "Historical source wind") +
   theme_bw(base_size = 13)
+
+bplot.act.PCB8
+
+ggsave(
+  "Output/Plots/Concentrations/BoxplotActivitiesPCB8.png",
+  plot = bplot.act.PCB8,
+  width = 12,
+  height = 8,
+  dpi = 500)
 
 plot3_dat <- dataset %>%
   select(
