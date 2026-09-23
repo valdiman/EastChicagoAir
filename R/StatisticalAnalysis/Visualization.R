@@ -29,6 +29,26 @@
 dataset <- read.csv("Data/FinalDataset/DatasetV03.csv")
 
 # Format data -------------------------------------------------------------
+# Source concepts are kept separate:
+#
+#   HistoricalSourceWind_*
+#       Persistent historical contaminated-source pathway.
+#       Applies regardless of the remediation activity occurring that day.
+#       NonSource & Source
+#
+#   ConstructionSourceWind_*
+#       Additional construction source pathway.
+#       Applies only during construction.
+#       NoConstruction (= Idle & Dredging), for Construction: Source & NonSource
+#
+#   DredgingSourceWind_*
+#       Additional dredging source pathway.
+#       Uses the GPS-derived daily dredging location and wind alignment.
+#       NoDredging (= Idle & Construction), for Dredging: Source & NonSource
+#
+# Activity remains separate:
+#   Idle / Construction / Dredging
+
 dataset <- dataset %>%
   mutate(
     date = as.Date(date),
