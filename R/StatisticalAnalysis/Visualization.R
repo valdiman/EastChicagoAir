@@ -67,1642 +67,994 @@ dataset <- dataset %>%
                                    levels = c("NoDredging", "NonSource", "Source"))
   )
 
-# 2-D plots ---------------------------------------------------------------
+# Activity Plots ----------------------------------------------------------
+# (i) Plot activities
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
+
+PCB <- "PCB31"
+
+# Prepare data
 plot_dat <- dataset %>%
-  select(date, activity, PCB8_South, PCB8_HS) %>%
+  select(
+    date,
+    activity,
+    all_of(paste0(PCB, "_South")),
+    all_of(paste0(PCB, "_HS"))
+  ) %>%
   pivot_longer(
-    cols = c(PCB8_South, PCB8_HS),
+    cols = c(
+      all_of(paste0(PCB, "_South")),
+      all_of(paste0(PCB, "_HS"))
+    ),
     names_to = "location",
     values_to = "PCB"
   ) %>%
   mutate(
     location = recode(
       location,
-      PCB8_South = "South",
-      PCB8_HS = "HS"
+      !!paste0(PCB, "_South") := "South",
+      !!paste0(PCB, "_HS") := "HS"
     )
   ) %>%
   filter(!is.na(PCB))
 
-ggplot(plot_dat,
-       aes(x = activity, y = PCB)) +
-  geom_boxplot(
-    outlier.shape = NA,
-    width = 0.55
-  ) +
-  geom_jitter(
-    width = 0.12,
-    alpha = 0.55,
-    size = 2
-  ) +
+ggplot(plot_dat, aes(x = activity, y = PCB)) +
+  geom_boxplot(outlier.shape = NA, width = 0.55) +
+  geom_jitter(width = 0.12, alpha = 0.55, size = 2) +
   facet_wrap(~ location) +
   scale_y_log10() +
-  labs(
-    x = "Activity",
-    y = "PCB8 concentration") +
+  labs(x = "Activity", y = paste0(PCB, " concentration")) +
   theme_bw(base_size = 13)
+
+# (ii) Plot activities
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
+
+PCB <- "PCB31"
 
 plot2_dat <- dataset %>%
   select(
     date,
     activity,
-    PCB8_South,
-    PCB8_HS,
+    all_of(paste0(PCB, "_South")),
+    all_of(paste0(PCB, "_HS")),
     HistoricalSourceWind_South,
     HistoricalSourceWind_HS
   ) %>%
   pivot_longer(
-    cols = c(PCB8_South, PCB8_HS),
+    cols = all_of(c(
+      paste0(PCB, "_South"),
+      paste0(PCB, "_HS"))),
     names_to = "location",
     values_to = "PCB"
   ) %>%
   mutate(
-    HistoricalSourceWind = case_when(
-      location == "PCB8_South" ~ as.character(HistoricalSourceWind_South),
-      location == "PCB8_HS"    ~ as.character(HistoricalSourceWind_HS)
-    ),
-    location = recode(
+    location = if_else(
+      grepl("_South$", location),
+      "South",
+      "HS"),
+    HistoricalSourceWind = if_else(
+      location == "South",
+      as.character(HistoricalSourceWind_South),
+      as.character(HistoricalSourceWind_HS)),
+    location = factor(
       location,
-      PCB8_South = "South",
-      PCB8_HS = "HS"
-    )
+      levels = c("South", "HS")),
+    HistoricalSourceWind = factor(
+      HistoricalSourceWind,
+      levels = c("NonSource", "Source"))
   ) %>%
   filter(
     !is.na(PCB),
-    !is.na(HistoricalSourceWind)
-  )
+    !is.na(HistoricalSourceWind))
 
-bplot.act.PCB8 <- ggplot(
+bplot.act.PCB <- ggplot(
   plot2_dat,
-  aes(
-    x = activity,
-    y = PCB,
-    fill = HistoricalSourceWind
-  )
-) +
+  aes(x = activity, y = PCB,
+    fill = HistoricalSourceWind)) +
   geom_boxplot(
     position = position_dodge(width = 0.8),
     width = 0.65,
-    outlier.shape = NA
-  ) +
+    outlier.shape = NA) +
   geom_point(
     aes(color = HistoricalSourceWind),
     position = position_jitterdodge(
       jitter.width = 0.10,
-      dodge.width = 0.8
-    ),
+      dodge.width = 0.8),
     alpha = 0.45,
-    size = 1.7
-  ) +
+    size = 1.7) +
   facet_wrap(~ location) +
   scale_y_log10() +
   labs(
     x = "Activity",
-    y = "PCB8 concentration",
+    y = paste0(PCB, " concentration"),
     fill = "Historical source wind",
     color = "Historical source wind") +
   theme_bw(base_size = 13)
 
-bplot.act.PCB8
+bplot.act.PCB
 
-ggsave("Output/Plots/Concentrations/BoxplotActivitiesPCB8.png",
-       plot = bplot.act.PCB8, width = 12, height = 8, dpi = 500)
+ggsave(paste0("Output/Plots/Concentrations/Activities/BPActivities_",
+              PCB, ".png"), plot = bplot.act.PCB, width = 12,
+       height = 8, dpi = 500)
 
-plot3_dat <- dataset %>%
+# Temperature Plots -------------------------------------------------------
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
+
+PCB <- "PCB31"
+
+temp_dat <- dataset %>%
   select(
     date,
     activity,
-    wind_speed,
-    PCB8_South,
-    PCB8_HS,
+    air_temp,
+    all_of(paste0(PCB, "_South")),
+    all_of(paste0(PCB, "_HS")),
     HistoricalSourceWind_South,
-    HistoricalSourceWind_HS
+    HistoricalSourceWind_HS,
+    ConstructionSourceWind_South,
+    ConstructionSourceWind_HS,
+    DredgingSourceWind_South,
+    DredgingSourceWind_HS
   ) %>%
   pivot_longer(
-    cols = c(PCB8_South, PCB8_HS),
+    cols = all_of(c(
+      paste0(PCB, "_South"),
+      paste0(PCB, "_HS"))),
     names_to = "location",
     values_to = "PCB"
   ) %>%
   mutate(
-    HistoricalSourceWind = case_when(
-      location == "PCB8_South" ~ as.character(HistoricalSourceWind_South),
-      location == "PCB8_HS"    ~ as.character(HistoricalSourceWind_HS)
-    ),
-    location = recode(
+    # Location
+    location = if_else(
+      endsWith(location, "_South"),
+      "South",
+      "HS"),
+    # Temperature in Celsius
+    air_temp_C = air_temp - 273.15,
+    
+    # Activity-specific source wind
+    ActivitySourceWind = case_when(
+      activity == "Idle" &
+        location == "South" ~
+        as.character(HistoricalSourceWind_South),
+      activity == "Idle" &
+        location == "HS" ~
+        as.character(HistoricalSourceWind_HS),
+      activity == "Construction" &
+        location == "South" ~
+        as.character(ConstructionSourceWind_South),
+      activity == "Construction" &
+        location == "HS" ~
+        as.character(ConstructionSourceWind_HS),
+      activity == "Dredging" &
+        location == "South" ~
+        as.character(DredgingSourceWind_South),
+      activity == "Dredging" &
+        location == "HS" ~
+        as.character(DredgingSourceWind_HS)),
+    location = factor(
       location,
-      PCB8_South = "South",
-      PCB8_HS = "HS"
-    )
+      levels = c("South", "HS")),
+    ActivitySourceWind = factor(
+      ActivitySourceWind,
+      levels = c("NonSource", "Source"))
+  ) %>%
+  filter(
+    !is.na(PCB),
+    !is.na(air_temp_C),
+    !is.na(ActivitySourceWind))
+
+plot.temp.PCB <- ggplot(
+  temp_dat,
+  aes(x = air_temp_C, y = PCB, color = ActivitySourceWind)) +
+  geom_point(alpha = 0.40, size = 1.6) +
+  facet_grid(location ~ activity) +
+  scale_y_log10() +
+  labs(x = "Air temperature (°C)", y = paste0(PCB, " concentration"),
+       color = "Source wind") +
+  theme_bw(base_size = 13)
+
+plot.temp.PCB
+
+ggsave(paste0("Output/Plots/Concentrations/Temperature/BPActivities_",
+              PCB, ".png"), plot = plot.temp.PCB, width = 12,
+       height = 8, dpi = 500)
+
+# Wind Speed Plots --------------------------------------------------------
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
+
+PCB <- "PCB31"
+
+wind_dat <- dataset %>%
+  select(
+    date,
+    activity,
+    wind_speed,
+    all_of(paste0(PCB, "_South")),
+    all_of(paste0(PCB, "_HS")),
+    HistoricalSourceWind_South,
+    HistoricalSourceWind_HS,
+    ConstructionSourceWind_South,
+    ConstructionSourceWind_HS,
+    DredgingSourceWind_South,
+    DredgingSourceWind_HS
+  ) %>%
+  pivot_longer(
+    cols = all_of(c(
+      paste0(PCB, "_South"),
+      paste0(PCB, "_HS"))),
+    names_to = "location",
+    values_to = "PCB"
+  ) %>%
+  mutate(
+    # Location
+    location = if_else(
+      endsWith(location, "_South"),
+      "South",
+      "HS"),
+    # Activity-specific source wind
+    ActivitySourceWind = case_when(
+      activity == "Idle" &
+        location == "South" ~
+        as.character(HistoricalSourceWind_South),
+      activity == "Idle" &
+        location == "HS" ~
+        as.character(HistoricalSourceWind_HS),
+      activity == "Construction" &
+        location == "South" ~
+        as.character(ConstructionSourceWind_South),
+      activity == "Construction" &
+        location == "HS" ~
+        as.character(ConstructionSourceWind_HS),
+      activity == "Dredging" &
+        location == "South" ~
+        as.character(DredgingSourceWind_South),
+      activity == "Dredging" &
+        location == "HS" ~
+        as.character(DredgingSourceWind_HS)),
+    location = factor(
+      location,
+      levels = c("South", "HS")),
+    ActivitySourceWind = factor(
+      ActivitySourceWind,
+      levels = c("NonSource", "Source"))
   ) %>%
   filter(
     !is.na(PCB),
     !is.na(wind_speed),
-    !is.na(HistoricalSourceWind)
-  )
+    !is.na(ActivitySourceWind))
 
-ggplot(
-  plot3_dat,
+plot.wind.PCB <- ggplot(
+  wind_dat,
+  aes(x = wind_speed, y = PCB, color = ActivitySourceWind)) +
+  geom_point(alpha = 0.40, size = 1.6) +
+  facet_grid(location ~ activity) +
+  scale_y_log10() +
+  labs(x = "Wind speed", y = paste0(PCB, " concentration"),
+       color = "Source wind") +
+  theme_bw(base_size = 13)
+
+plot.wind.PCB
+
+ggsave(paste0("Output/Plots/Concentrations/WindSpeed/WindSpeed_",
+              PCB, ".png"), plot = plot.wind.PCB, width = 12,
+       height = 8, dpi = 500)
+
+# Wind Rose Style Plots ---------------------------------------------------
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
+
+PCB <- "PCB20.28"
+
+# All activities
+pcb_activity_both <- dataset %>%
+  select(
+    wind_direction,
+    wind_speed,
+    activity,
+    all_of(paste0(PCB, "_South")),
+    all_of(paste0(PCB, "_HS"))
+  ) %>%
+  pivot_longer(
+    cols = all_of(c(
+      paste0(PCB, "_South"),
+      paste0(PCB, "_HS"))),
+    names_to = "location",
+    values_to = "PCB"
+  ) %>%
+  mutate(
+    location = if_else(
+      endsWith(location, "_South"),
+      "South",
+      "HS"),
+    location = factor(
+      location,
+      levels = c("South", "HS"))
+  ) %>%
+  filter(
+    !is.na(PCB),
+    !is.na(wind_direction),
+    !is.na(wind_speed)
+  ) %>%
+  transmute(
+    wd = wind_direction,
+    ws = wind_speed,
+    PCB,
+    activity,
+    location)
+
+PCB_upper <- ceiling(max(pcb_activity_both$PCB, na.rm = TRUE))
+
+PCB_breaks <- c(0, 5, 10, 20, 40, 80, PCB_upper)
+
+wrplot_PCB_activity <- pollutionRose(
+  pcb_activity_both,
+  pollutant = "PCB",
+  type = c(
+    "location",
+    "activity"),
+  angle = 30,
+  breaks = PCB_breaks,
+  statistic = "prop.count",
+  paddle = FALSE,
+  key.title = paste0(PCB, " (pg/m³)"),
+  key.position = "right")
+
+# Save plot
+ggsave(paste0("Output/Plots/Concentrations/WindRoseStyle/",PCB, "WindRose",
+              "_Activity_Location.png"), plot = wrplot_PCB_activity$plot,
+       width = 12, height = 12, dpi = 500, bg = "white")
+
+# Function: activity-specific PCB pollution rose --------------------------
+make_activity_windrose <- function(
+    dataset,
+    PCB,
+    activity,
+    output_dir = "Output/Plots/Concentrations/WindRoseStyle"
+) {
+  
+  # Select the appropriate source-wind variables
+  
+  source_vars <- switch(
+    activity,
+    
+    "Idle" = c(
+      "HistoricalSourceWind_South",
+      "HistoricalSourceWind_HS"),
+    
+    "Construction" = c(
+      "ConstructionSourceWind_South",
+      "ConstructionSourceWind_HS"),
+    
+    "Dredging" = c(
+      "DredgingSourceWind_South",
+      "DredgingSourceWind_HS"),
+    
+    stop("Activity must be Idle, Construction, or Dredging."))
+  
+  # PCB column names
+  
+  pcb_south <- paste0(PCB, "_South")
+  pcb_hs <- paste0(PCB, "_HS")
+  
+  # Build dataset
+  
+  plot_dat <- dataset %>%
+    
+    filter(activity == !!activity) %>%
+    
+    select(
+      wind_direction,
+      wind_speed,
+      all_of(c(
+        pcb_south,
+        pcb_hs,
+        source_vars))
+    ) %>%
+    
+    pivot_longer(
+      cols = all_of(c(
+        pcb_south,
+        pcb_hs)),
+      names_to = "location",
+      values_to = "PCB"
+    ) %>%
+    
+    mutate(
+      
+      # Location
+      location = if_else(
+        endsWith(location, "_South"), "South", "HS"),
+      
+      # Appropriate source-wind variable
+      SourceWind = if_else(
+        location == "South",
+        as.character(.data[[source_vars[1]]]),
+        as.character(.data[[source_vars[2]]])),
+      
+      location = factor(location, levels = c("South", "HS")),
+      
+      SourceWind = factor(
+        SourceWind,
+        levels = c("NonSource", "Source"))
+    ) %>%
+    
+    filter(
+      !is.na(PCB),
+      !is.na(wind_direction),
+      !is.na(wind_speed),
+      !is.na(SourceWind)
+    ) %>%
+    
+    transmute(wd = wind_direction, ws = wind_speed, PCB, location, SourceWind)
+  
+  # Concentration breaks
+  
+  PCB_upper <- ceiling(max(plot_dat$PCB, na.rm = TRUE))
+  
+  PCB_breaks <- c(0, 5, 10, 20, 40, 80, PCB_upper)
+  
+  # Remove duplicated/non-increasing breaks
+  PCB_breaks <- sort(unique(PCB_breaks[PCB_breaks <= PCB_upper]))
+  
+  if (length(PCB_breaks) < 2) {
+    stop(paste0("Not enough valid concentration breaks for ", PCB,
+                " during ", activity))
+  }
+  
+  # Pollution rose
+  
+  plot <- pollutionRose(plot_dat, pollutant = "PCB",
+                        type = c("location", "SourceWind"),
+                        angle = 30, breaks = PCB_breaks,
+                        statistic = "prop.count", paddle = FALSE,
+                        key.title = paste0(PCB, " (pg/m³)"),
+                        key.position = "right")
+  
+  # Save
+  
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+  }
+  
+  file_name <- paste0(PCB, "WindRose", activity, ".png")
+  
+  ggsave(file.path(output_dir, file_name), plot = plot$plot, width = 12,
+         height = 12, dpi = 500, bg = "white")
+  
+  # Return object
+  
+  return(plot)
+}
+
+# Create the plots
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
+
+PCB <- "PCB31"
+
+wrplot_idle <- make_activity_windrose(
+  dataset = dataset,
+  PCB = PCB,
+  activity = "Idle")
+
+wrplot_construction <- make_activity_windrose(
+  dataset = dataset,
+  PCB = PCB,
+  activity = "Construction")
+
+wrplot_dredging <- make_activity_windrose(
+  dataset = dataset,
+  PCB = PCB,
+  activity = "Dredging")
+
+# Seasonality: day of year -----------------------------------------------
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
+
+PCB <- "PCB31"
+
+season_dat <- dataset %>%
+  select(
+    date,
+    day_of_year,
+    activity,
+    
+    all_of(paste0(PCB, "_South")),
+    all_of(paste0(PCB, "_HS")),
+    
+    HistoricalSourceWind_South,
+    HistoricalSourceWind_HS,
+    
+    ConstructionSourceWind_South,
+    ConstructionSourceWind_HS,
+    
+    DredgingSourceWind_South,
+    DredgingSourceWind_HS
+  ) %>%
+  pivot_longer(
+    cols = all_of(c(
+      paste0(PCB, "_South"),
+      paste0(PCB, "_HS"))),
+    names_to = "location",
+    values_to = "PCB"
+  ) %>%
+  mutate(
+    location = if_else(
+      endsWith(location, "_South"),
+      "South",
+      "HS"),
+    
+    ActivitySourceWind = case_when(
+      
+      activity == "Idle" &
+        location == "South" ~
+        as.character(HistoricalSourceWind_South),
+      
+      activity == "Idle" &
+        location == "HS" ~
+        as.character(HistoricalSourceWind_HS),
+      
+      activity == "Construction" &
+        location == "South" ~
+        as.character(ConstructionSourceWind_South),
+      
+      activity == "Construction" &
+        location == "HS" ~
+        as.character(ConstructionSourceWind_HS),
+      
+      activity == "Dredging" &
+        location == "South" ~
+        as.character(DredgingSourceWind_South),
+      
+      activity == "Dredging" &
+        location == "HS" ~
+        as.character(DredgingSourceWind_HS)),
+    
+    location = factor(
+      location,
+      levels = c("South", "HS")),
+    
+    ActivitySourceWind = factor(
+      ActivitySourceWind,
+      levels = c("NonSource", "Source"))
+  ) %>%
+  filter(
+    !is.na(PCB),
+    !is.na(day_of_year),
+    !is.na(ActivitySourceWind))
+
+plot.doy.PCB <- ggplot(
+  season_dat,
   aes(
-    x = wind_speed,
+    x = day_of_year,
     y = PCB,
-    color = HistoricalSourceWind
+    color = ActivitySourceWind
   )
 ) +
   geom_point(
-    alpha = 0.35,
-    size = 1.5) + 
+    alpha = 0.40,
+    size = 1.6
+  ) +
+  facet_grid(
+    location ~ activity
+  ) +
+  scale_y_log10() +
+  scale_x_continuous(
+    breaks = c(
+      1, 32, 60, 91, 121, 152,
+      182, 213, 244, 274, 305, 335
+    ),
+    labels = c(
+      "Jan", "Feb", "Mar", "Apr",
+      "May", "Jun", "Jul", "Aug",
+      "Sep", "Oct", "Nov", "Dec"
+    )
+  ) +
+  labs(
+    x = "Time of year",
+    y = paste0(PCB, " concentration"),
+    color = "Source wind"
+  ) +
+  theme_bw(base_size = 13)
+
+plot.doy.PCB
+
+# Save plot
+ggsave(paste0("Output/Plots/Concentrations/Day_of_year/", PCB, "DayOfYear",
+              ".png"), plot = plot.doy.PCB, width = 16, height = 8,
+       dpi = 500, bg = "white")
+
+# Water temperature -------------------------------------------------------
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
+
+PCB <- "PCB31"
+
+water_temp_dat <- dataset %>%
+  select(
+    date,
+    activity,
+    water_temp,
+    
+    all_of(paste0(PCB, "_South")),
+    all_of(paste0(PCB, "_HS")),
+    
+    HistoricalSourceWind_South,
+    HistoricalSourceWind_HS,
+    
+    ConstructionSourceWind_South,
+    ConstructionSourceWind_HS,
+    
+    DredgingSourceWind_South,
+    DredgingSourceWind_HS
+  ) %>%
+  pivot_longer(
+    cols = all_of(c(
+      paste0(PCB, "_South"),
+      paste0(PCB, "_HS"))),
+    names_to = "location",
+    values_to = "PCB"
+  ) %>%
+  mutate(
+    
+    location = if_else(
+      endsWith(location, "_South"),
+      "South",
+      "HS"),
+    
+    ActivitySourceWind = case_when(
+      
+      activity == "Idle" &
+        location == "South" ~
+        as.character(HistoricalSourceWind_South),
+      
+      activity == "Idle" &
+        location == "HS" ~
+        as.character(HistoricalSourceWind_HS),
+      
+      activity == "Construction" &
+        location == "South" ~
+        as.character(ConstructionSourceWind_South),
+      
+      activity == "Construction" &
+        location == "HS" ~
+        as.character(ConstructionSourceWind_HS),
+      
+      activity == "Dredging" &
+        location == "South" ~
+        as.character(DredgingSourceWind_South),
+      
+      activity == "Dredging" &
+        location == "HS" ~
+        as.character(DredgingSourceWind_HS)),
+    
+    location = factor(
+      location,
+      levels = c("South", "HS")),
+    
+    ActivitySourceWind = factor(
+      ActivitySourceWind,
+      levels = c("NonSource", "Source"))
+  ) %>%
+  filter(
+    !is.na(PCB),
+    !is.na(water_temp),
+    !is.na(ActivitySourceWind))
+
+plot.water.temp.PCB <- ggplot(
+  water_temp_dat,
+  aes(
+    x = water_temp,
+    y = PCB,
+    color = ActivitySourceWind
+  )
+) +
+  geom_point(
+    alpha = 0.40,
+    size = 1.6
+  ) +
   facet_grid(
     location ~ activity
   ) +
   scale_y_log10() +
   labs(
-    x = "Wind speed",
-    y = "PCB8 concentration",
-    color = "Historical source wind") +
+    x = "Water temperature (°C)",
+    y = paste0(PCB, " concentration"),
+    color = "Source wind"
+  ) +
   theme_bw(base_size = 13)
 
-ggplot(
-  plot3_dat,
-  aes(
-    x = HistoricalSourceWind,
-    y = wind_speed,
-    fill = HistoricalSourceWind
-  )
-) +
-  geom_boxplot(
-    outlier.shape = NA,
-    width = 0.55
-  ) +
-  geom_jitter(
-    width = 0.10,
-    alpha = 0.3,
-    size = 1.3
-  ) +
-  facet_grid(location ~ activity) +
-  labs(
-    x = "Historical source wind",
-    y = "Wind speed") +
-  theme_bw(base_size = 13) +
-  theme(legend.position = "none")
-
-plot5_dat <- dataset %>%
-  select(
-    date,
-    activity,
-    air_temp,
-    PCB8_South,
-    PCB8_HS,
-    HistoricalSourceWind_South,
-    HistoricalSourceWind_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB8_South, PCB8_HS),
-    names_to = "location",
-    values_to = "PCB"
-  ) %>%
-  mutate(
-    HistoricalSourceWind = case_when(
-      location == "PCB8_South" ~ as.character(HistoricalSourceWind_South),
-      location == "PCB8_HS"    ~ as.character(HistoricalSourceWind_HS)
-    ),
-    location = recode(
-      location,
-      PCB8_South = "South",
-      PCB8_HS = "HS"
-    )
-  ) %>%
-  filter(
-    !is.na(PCB),
-    !is.na(air_temp),
-    !is.na(HistoricalSourceWind)
-  )
-
-ggplot(
-  plot5_dat,
-  aes(
-    x = air_temp,
-    y = PCB,
-    color = HistoricalSourceWind
-  )
-) +
-  geom_point(
-    alpha = 0.35,
-    size = 1.5
-  ) +
-  facet_grid(location ~ activity) +
-  scale_y_log10() +
-  labs(
-    x = "Air temperature",
-    y = "PCB8 concentration",
-    color = "Historical source wind") +
-  theme_bw(base_size = 13)
-
-ggplot(
-  plot5_dat,
-  aes(
-    x = activity,
-    y = air_temp,
-    fill = activity
-  )
-) +
-  geom_boxplot(
-    outlier.shape = NA,
-    width = 0.55
-  ) +
-  geom_jitter(
-    width = 0.10,
-    alpha = 0.25,
-    size = 1.2
-  ) +
-  facet_wrap(~ location) +
-  labs(
-    x = "Activity",
-    y = "Air temperature (K)") +
-  theme_bw(base_size = 13) +
-  theme(legend.position = "none")
-
-# Wind Rose Style Plots ---------------------------------------------------
-# PCB8
-# All activities
-pcb8_activity_both <- dataset %>%
-  select(
-    wind_direction,
-    wind_speed,
-    activity,
-    PCB8_South,
-    PCB8_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB8_South, PCB8_HS),
-    names_to = "location",
-    values_to = "PCB8"
-  ) %>%
-  mutate(
-    location = recode(
-      location,
-      PCB8_South = "South",
-      PCB8_HS = "HS"
-    ),
-    
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    )
-  ) %>%
-  filter(
-    !is.na(PCB8),
-    !is.na(wind_direction),
-    !is.na(wind_speed)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB8,
-    activity,
-    location
-  )
-
-pcb8_activity_both %>%
-  count(location, activity)
-
-pcb8_upper <- ceiling(
-  max(pcb8_activity_both$PCB8, na.rm = TRUE))
-
-pcb8_upper
-
-wrplot_PCB8_activity <- pollutionRose(
-  pcb8_activity_both,
-  pollutant = "PCB8",
-  type = c(
-    "location",
-    "activity"
-  ),
-  angle = 30,
-  breaks = pcb8_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB8 (pg/m³)",
-  key.position = "right"
-)
+plot.water.temp.PCB
 
 # Save plot
-ggsave("Output/Plots/WindRoseStyle/WindRosePCB8_Activity_Location.png",
-       plot = wrplot_PCB8_activity$plot, width = 12, height = 12, dpi = 500,
-       bg = "white")
+ggsave(paste0("Output/Plots/Concentrations/WaterTemperature/", PCB,
+              "WaterTemperature_", ".png"), plot = plot.water.temp.PCB,
+       width = 12, height = 8, dpi = 500, bg = "white")
 
-# Per activity
-# Idle
-pcb8_idle_source <- dataset %>%
-  filter(activity == "Idle") %>%
-  select(
-    wind_direction,
-    wind_speed,
-    PCB8_South,
-    PCB8_HS,
-    HistoricalSourceWind_South,
-    HistoricalSourceWind_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB8_South, PCB8_HS),
-    names_to = "location",
-    values_to = "PCB8"
-  ) %>%
-  mutate(
-    HistoricalSourceWind = case_when(
-      location == "PCB8_South" ~
-        as.character(HistoricalSourceWind_South),
-      
-      location == "PCB8_HS" ~
-        as.character(HistoricalSourceWind_HS)
-    ),
-    
-    location = recode(
-      location,
-      PCB8_South = "South",
-      PCB8_HS = "HS"
-    )
-  ) %>%
-  filter(
-    !is.na(PCB8),
-    !is.na(wind_direction),
-    !is.na(wind_speed),
-    !is.na(HistoricalSourceWind)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB8,
-    
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    ),
-    
-    HistoricalSourceWind = factor(
-      HistoricalSourceWind,
-      levels = c("NonSource", "Source")
-    )
-  )
+# Water flow (log10) Plots ------------------------------------------------
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
 
-pcb8_idle_upper <- ceiling(
-  max(pcb8_idle_source$PCB8, na.rm = TRUE)
-)
+PCB <- "PCB31"
 
-pcb8_idle_upper
-
-pcb8_idle_breaks <- c(
-  0, 5, 10, 20, 40, 80,
-  pcb8_idle_upper
-)
-
-wrplot_PCB8_idle <- pollutionRose(
-  pcb8_idle_source,
-  pollutant = "PCB8",
-  type = c(
-    "location",
-    "HistoricalSourceWind"
-  ),
-  angle = 30,
-  breaks = pcb8_idle_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB8 (pg/m³)",
-  key.position = "right"
-)
-
-# save plot
-ggsave("Output/Plots/WindRoseStyle/PCB8WindRoseIdle.png",
-       plot = wrplot_PCB8_idle$plot, width = 12, height = 12,
-       dpi = 500, bg = "white")
-
-# Construction
-pcb8_construction_source <- dataset %>%
-  filter(activity == "Construction") %>%
-  select(
-    wind_direction,
-    wind_speed,
-    PCB8_South,
-    PCB8_HS,
-    ConstructionSourceWind_South,
-    ConstructionSourceWind_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB8_South, PCB8_HS),
-    names_to = "location",
-    values_to = "PCB8"
-  ) %>%
-  mutate(
-    ConstructionSourceWind = case_when(
-      location == "PCB8_South" ~
-        as.character(ConstructionSourceWind_South),
-      
-      location == "PCB8_HS" ~
-        as.character(ConstructionSourceWind_HS)
-    ),
-    
-    location = recode(
-      location,
-      PCB8_South = "South",
-      PCB8_HS = "HS"
-    )
-  ) %>%
-  filter(
-    !is.na(PCB8),
-    !is.na(wind_direction),
-    !is.na(wind_speed),
-    !is.na(ConstructionSourceWind)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB8,
-    
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    ),
-    
-    ConstructionSourceWind = factor(
-      ConstructionSourceWind,
-      levels = c("NonSource", "Source")
-    )
-  )
-
-pcb8_construction_upper <- ceiling(
-  max(
-    pcb8_construction_source$PCB8,
-    na.rm = TRUE
-  )
-)
-
-pcb8_construction_breaks <- c(
-  0, 5, 10, 20, 40, 80,
-  pcb8_construction_upper
-)
-
-wrplot_PCB8_construction <- pollutionRose(
-  pcb8_construction_source,
-  pollutant = "PCB8",
-  type = c(
-    "location",
-    "ConstructionSourceWind"
-  ),
-  angle = 30,
-  breaks = pcb8_construction_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB8 (pg/m³)",
-  key.position = "right"
-)
-
-# save plot
-ggsave("Output/Plots/WindRoseStyle/PCB8WindRoseConstruction.png",
-       plot = wrplot_PCB8_construction$plot, width = 12, height = 12,
-       dpi = 500, bg = "white")
-
-# Dredging
-pcb8_dredge_both <- dataset %>%
-  filter(activity == "Dredging") %>%
-  select(
-    wind_direction,
-    wind_speed,
-    PCB8_South,
-    PCB8_HS,
-    DredgingSourceWind_South,
-    DredgingSourceWind_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB8_South, PCB8_HS),
-    names_to = "location",
-    values_to = "PCB8"
-  ) %>%
-  mutate(
-    DredgingSourceWind = case_when(
-      location == "PCB8_South" ~
-        as.character(DredgingSourceWind_South),
-      
-      location == "PCB8_HS" ~
-        as.character(DredgingSourceWind_HS)
-    ),
-    
-    location = recode(
-      location,
-      PCB8_South = "South",
-      PCB8_HS = "HS"
-    )
-  ) %>%
-  filter(
-    !is.na(PCB8),
-    !is.na(wind_direction),
-    !is.na(wind_speed),
-    !is.na(DredgingSourceWind)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB8,
-    
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    ),
-    
-    DredgingSourceWind = factor(
-      DredgingSourceWind,
-      levels = c("NonSource", "Source")
-    )
-  )
-
-pcb8_dredge_both %>%
-  count(location, DredgingSourceWind)
-
-pcb8_upper <- ceiling(
-  max(pcb8_dredge_both$PCB8, na.rm = TRUE)
-)
-
-pcb8_breaks <- c(
-  0, 5, 10, 20, 40, 80,
-  pcb8_upper
-)
-
-wrplot_PCB8_dredging <-pollutionRose(
-  pcb8_dredge_both,
-  pollutant = "PCB8",
-  type = c(
-    "location",
-    "DredgingSourceWind"
-  ),
-  angle = 30,
-  breaks = pcb8_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB8 (pg/m³)",
-  key.position = "right"
-)
-
-# save plot
-ggsave("Output/Plots/WindRoseStyle/PCB8WindRoseDredging.png",
-       plot = wrplot_PCB8_dredging$plot, width = 12, height = 12,
-       dpi = 500, bg = "white")
-
-# PCB15
-# All activities
-pcb15_activity_both <- dataset %>%
-  select(
-    wind_direction,
-    wind_speed,
-    activity,
-    PCB15_South,
-    PCB15_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB15_South, PCB15_HS),
-    names_to = "location",
-    values_to = "PCB15"
-  ) %>%
-  mutate(
-    location = recode(
-      location,
-      PCB15_South = "South",
-      PCB15_HS = "HS"
-    ),
-    
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    )
-  ) %>%
-  filter(
-    !is.na(PCB15),
-    !is.na(wind_direction),
-    !is.na(wind_speed)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB15,
-    activity,
-    location
-  )
-
-pcb15_activity_both %>%
-  count(location, activity)
-
-# Common PCB15 concentration scale
-pcb15_upper <- ceiling(
-  max(
-    pcb15_activity_both$PCB15,
-    na.rm = TRUE
-  )
-)
-
-pcb15_upper
-
-pcb15_breaks <- c(
-  0, 5, 10, 20, 40, 80,
-  pcb15_upper
-)
-
-wrplot_PCB15_activity <- pollutionRose(
-  pcb15_activity_both,
-  pollutant = "PCB15",
-  type = c(
-    "location",
-    "activity"
-  ),
-  angle = 30,
-  breaks = pcb15_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB15 (pg/m³)",
-  key.position = "right"
-)
-
-ggsave(
-  "Output/Plots/WindRoseStyle/WindRosePCB15_Activity_Location.png",
-  plot = wrplot_PCB15_activity$plot,
-  width = 12,
-  height = 12,
-  dpi = 500,
-  bg = "white")
-
-# Idle -------------------------------------------------------------------
-
-pcb15_idle_source <- dataset %>%
-  filter(activity == "Idle") %>%
-  select(
-    wind_direction,
-    wind_speed,
-    PCB15_South,
-    PCB15_HS,
-    HistoricalSourceWind_South,
-    HistoricalSourceWind_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB15_South, PCB15_HS),
-    names_to = "location",
-    values_to = "PCB15"
-  ) %>%
-  mutate(
-    HistoricalSourceWind = case_when(
-      location == "PCB15_South" ~
-        as.character(HistoricalSourceWind_South),
-      
-      location == "PCB15_HS" ~
-        as.character(HistoricalSourceWind_HS)
-    ),
-    
-    location = recode(
-      location,
-      PCB15_South = "South",
-      PCB15_HS = "HS"
-    )
-  ) %>%
-  filter(
-    !is.na(PCB15),
-    !is.na(wind_direction),
-    !is.na(wind_speed),
-    !is.na(HistoricalSourceWind)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB15,
-    
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    ),
-    
-    HistoricalSourceWind = factor(
-      HistoricalSourceWind,
-      levels = c("NonSource", "Source")
-    )
-  )
-
-wrplot_PCB15_idle <- pollutionRose(
-  pcb15_idle_source,
-  pollutant = "PCB15",
-  type = c(
-    "location",
-    "HistoricalSourceWind"
-  ),
-  angle = 30,
-  breaks = pcb15_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB15 (pg/m³)",
-  key.position = "right"
-)
-
-ggsave(
-  "Output/Plots/WindRoseStyle/PCB15WindRoseIdle.png",
-  plot = wrplot_PCB15_idle$plot,
-  width = 12,
-  height = 12,
-  dpi = 500,
-  bg = "white"
-)
-
-# Construction ------------------------------------------------------------
-
-pcb15_construction_source <- dataset %>%
-  filter(activity == "Construction") %>%
-  select(
-    wind_direction,
-    wind_speed,
-    PCB15_South,
-    PCB15_HS,
-    ConstructionSourceWind_South,
-    ConstructionSourceWind_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB15_South, PCB15_HS),
-    names_to = "location",
-    values_to = "PCB15"
-  ) %>%
-  mutate(
-    ConstructionSourceWind = case_when(
-      location == "PCB15_South" ~
-        as.character(ConstructionSourceWind_South),
-      
-      location == "PCB15_HS" ~
-        as.character(ConstructionSourceWind_HS)
-    ),
-    
-    location = recode(
-      location,
-      PCB15_South = "South",
-      PCB15_HS = "HS"
-    )
-  ) %>%
-  filter(
-    !is.na(PCB15),
-    !is.na(wind_direction),
-    !is.na(wind_speed),
-    !is.na(ConstructionSourceWind)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB15,
-    
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    ),
-    
-    ConstructionSourceWind = factor(
-      ConstructionSourceWind,
-      levels = c("NonSource", "Source")
-    )
-  )
-
-wrplot_PCB15_construction <- pollutionRose(
-  pcb15_construction_source,
-  pollutant = "PCB15",
-  type = c(
-    "location",
-    "ConstructionSourceWind"
-  ),
-  angle = 30,
-  breaks = pcb15_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB15 (pg/m³)",
-  key.position = "right"
-)
-
-wrplot_PCB15_construction
-
-ggsave(
-  "Output/Plots/WindRoseStyle/PCB15WindRoseConstruction.png",
-  plot = wrplot_PCB15_construction$plot,
-  width = 12,
-  height = 12,
-  dpi = 500,
-  bg = "white"
-)
-
-# Dredging ----------------------------------------------------------------
-
-pcb15_dredge_both <- dataset %>%
-  filter(activity == "Dredging") %>%
-  select(
-    wind_direction,
-    wind_speed,
-    PCB15_South,
-    PCB15_HS,
-    DredgingSourceWind_South,
-    DredgingSourceWind_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB15_South, PCB15_HS),
-    names_to = "location",
-    values_to = "PCB15"
-  ) %>%
-  mutate(
-    DredgingSourceWind = case_when(
-      location == "PCB15_South" ~
-        as.character(DredgingSourceWind_South),
-      
-      location == "PCB15_HS" ~
-        as.character(DredgingSourceWind_HS)
-    ),
-    
-    location = recode(
-      location,
-      PCB15_South = "South",
-      PCB15_HS = "HS"
-    )
-  ) %>%
-  filter(
-    !is.na(PCB15),
-    !is.na(wind_direction),
-    !is.na(wind_speed),
-    !is.na(DredgingSourceWind)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB15,
-    
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    ),
-    
-    DredgingSourceWind = factor(
-      DredgingSourceWind,
-      levels = c("NonSource", "Source")
-    )
-  )
-
-pcb15_dredge_both %>%
-  count(location, DredgingSourceWind)
-
-wrplot_PCB15_dredging <- pollutionRose(
-  pcb15_dredge_both,
-  pollutant = "PCB15",
-  type = c(
-    "location",
-    "DredgingSourceWind"
-  ),
-  angle = 30,
-  breaks = pcb15_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB15 (pg/m³)",
-  key.position = "right"
-)
-
-wrplot_PCB15_dredging
-
-ggsave(
-  "Output/Plots/WindRoseStyle/PCB15WindRoseDredging.png",
-  plot = wrplot_PCB15_dredging$plot,
-  width = 12,
-  height = 12,
-  dpi = 500,
-  bg = "white"
-)
-
-
-
-
-
-
-# PCB31
-pcb31_dredge_both <- dataset %>%
-  filter(activity == "Dredging") %>%
-  select(
-    wind_direction,
-    wind_speed,
-    PCB31_South,
-    PCB31_HS,
-    DredgingSourceWind_South,
-    DredgingSourceWind_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB31_South, PCB31_HS),
-    names_to = "location",
-    values_to = "PCB31"
-  ) %>%
-  mutate(
-    DredgingSourceWind = case_when(
-      location == "PCB31_South" ~
-        as.character(DredgingSourceWind_South),
-      
-      location == "PCB31_HS" ~
-        as.character(DredgingSourceWind_HS)
-    ),
-    
-    location = recode(
-      location,
-      PCB31_South = "South",
-      PCB31_HS = "HS"
-    )
-  ) %>%
-  filter(
-    !is.na(PCB31),
-    !is.na(wind_direction),
-    !is.na(wind_speed),
-    !is.na(DredgingSourceWind)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB31,
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    ),
-    DredgingSourceWind = factor(
-      DredgingSourceWind,
-      levels = c("NonSource", "Source")
-    )
-  )
-
-pcb31_dredge_both %>%
-  count(location, DredgingSourceWind)
-
-pcb31_upper <- ceiling(
-  max(pcb31_dredge_both$PCB31, na.rm = TRUE)
-)
-
-pcb31_upper
-
-pcb31_breaks <- c(
-  0, 5, 10, 20, 40, 80,
-  pcb31_upper
-)
-
-wrplot.31 <- pollutionRose(
-  pcb31_dredge_both,
-  pollutant = "PCB31",
-  type = c(
-    "location",
-    "DredgingSourceWind"
-  ),
-  angle = 30,
-  breaks = pcb31_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB31 (pg/m³)",
-  key.position = "right"
-)
-
-# save plot
-ggsave("Output/Plots/WindRoseStyle/WindRosePCB31.png", plot = wrplot.31$plot,
-       width = 12, height = 12, dpi = 500, bg = "white")
-
-pcb31_activity_both <- dataset %>%
-  select(
-    wind_direction,
-    wind_speed,
-    activity,
-    PCB31_South,
-    PCB31_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB31_South, PCB31_HS),
-    names_to = "location",
-    values_to = "PCB31"
-  ) %>%
-  mutate(
-    location = recode(
-      location,
-      PCB31_South = "South",
-      PCB31_HS = "HS"
-    ),
-    
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    )
-  ) %>%
-  filter(
-    !is.na(PCB31),
-    !is.na(wind_direction),
-    !is.na(wind_speed)
-  ) %>%
-  transmute(
-    wd = wind_direction,
-    ws = wind_speed,
-    PCB31,
-    activity,
-    location
-  )
-
-pcb31_activity_both %>%
-  count(location, activity)
-
-pcb31_upper <- ceiling(
-  max(pcb31_activity_both$PCB31, na.rm = TRUE)
-)
-
-pcb31_upper
-
-pcb31_breaks <- c(
-  0, 5, 10, 20, 40, 80,
-  pcb31_upper
-)
-
-wrplot_PCB31_activity <- pollutionRose(
-  pcb31_activity_both,
-  pollutant = "PCB31",
-  type = c(
-    "activity",
-    "location"
-  ),
-  angle = 30,
-  breaks = pcb31_breaks,
-  statistic = "prop.count",
-  paddle = FALSE,
-  key.title = "PCB31 (pg/m³)",
-  key.position = "right"
-)
-
-ggsave(
-  "Output/Plots/WindRoseStyle/WindRosePCB31_Activity_Location.png",
-  plot = wrplot_PCB31_activity$plot,
-  width = 12,
-  height = 12,
-  dpi = 500,
-  bg = "white"
-)
-
-# Other Plots -------------------------------------------------------------
-pcb_long <- dataset %>%
+flow_dat <- dataset %>%
   select(
     date,
     activity,
-    
-    PCB8_South, PCB8_HS,
-    PCB15_South, PCB15_HS,
-    PCB18.30_South, PCB18.30_HS,
-    PCB20.28_South, PCB20.28_HS,
-    PCB31_South, PCB31_HS
-  ) %>%
-  pivot_longer(
-    cols = starts_with("PCB"),
-    names_to = c("PCB", "location"),
-    names_pattern = "(PCB(?:8|15|18\\.30|20\\.28|31))_(South|HS)",
-    values_to = "concentration"
-  ) %>%
-  mutate(
-    PCB = factor(
-      PCB,
-      levels = c(
-        "PCB8",
-        "PCB15",
-        "PCB18.30",
-        "PCB20.28",
-        "PCB31"
-      )
-    ),
-    location = factor(
-      location,
-      levels = c("South", "HS")
-    )
-  ) %>%
-  filter(!is.na(concentration))
-
-ggplot(
-  pcb_long,
-  aes(
-    x = activity,
-    y = concentration,
-    fill = activity
-  )
-) +
-  geom_boxplot(
-    outlier.shape = NA,
-    width = 0.55,
-    alpha = 0.75
-  ) +
-  geom_jitter(
-    aes(color = activity),
-    width = 0.12,
-    alpha = 0.25,
-    size = 0.8
-  ) +
-  facet_grid(
-    PCB ~ location,
-    scales = "free_y"
-  ) +
-  scale_y_log10() +
-  labs(
-    x = "Activity",
-    y = "PCB concentration",
-    fill = "Activity",
-    color = "Activity"
-  ) +
-  theme_bw(base_size = 12) +
-  theme(
-    legend.position = "bottom"
-  )
-
-pcb_long_cov <- dataset %>%
-  select(
-    date,
-    activity,
-    air_temp,
-    wind_speed,
-    wind_direction,
-    water_temp,
     flow_cfs,
+    
+    all_of(paste0(PCB, "_South")),
+    all_of(paste0(PCB, "_HS")),
     
     HistoricalSourceWind_South,
     HistoricalSourceWind_HS,
     
-    PCB8_South, PCB8_HS,
-    PCB15_South, PCB15_HS,
-    PCB18.30_South, PCB18.30_HS,
-    PCB20.28_South, PCB20.28_HS,
-    PCB31_South, PCB31_HS
+    ConstructionSourceWind_South,
+    ConstructionSourceWind_HS,
+    
+    DredgingSourceWind_South,
+    DredgingSourceWind_HS
   ) %>%
   pivot_longer(
-    cols = matches(
-      "^PCB(8|15|18\\.30|20\\.28|31)_(South|HS)$"
-    ),
-    names_to = c("PCB", "location"),
-    names_pattern =
-      "(PCB(?:8|15|18\\.30|20\\.28|31))_(South|HS)",
-    values_to = "concentration"
+    cols = all_of(c(
+      paste0(PCB, "_South"),
+      paste0(PCB, "_HS")
+    )),
+    names_to = "location",
+    values_to = "PCB"
   ) %>%
   mutate(
-    air_temp_C = air_temp - 273.15,
     
-    HistoricalSourceWind = case_when(
-      location == "South" ~
-        as.character(HistoricalSourceWind_South),
-      location == "HS" ~
-        as.character(HistoricalSourceWind_HS)
+    location = if_else(
+      endsWith(location, "_South"),
+      "South",
+      "HS"
     ),
     
-    PCB = factor(
-      PCB,
-      levels = c(
-        "PCB8", "PCB15", "PCB18.30",
-        "PCB20.28", "PCB31"
-      )
+    ActivitySourceWind = case_when(
+      
+      activity == "Idle" &
+        location == "South" ~
+        as.character(HistoricalSourceWind_South),
+      
+      activity == "Idle" &
+        location == "HS" ~
+        as.character(HistoricalSourceWind_HS),
+      
+      activity == "Construction" &
+        location == "South" ~
+        as.character(ConstructionSourceWind_South),
+      
+      activity == "Construction" &
+        location == "HS" ~
+        as.character(ConstructionSourceWind_HS),
+      
+      activity == "Dredging" &
+        location == "South" ~
+        as.character(DredgingSourceWind_South),
+      
+      activity == "Dredging" &
+        location == "HS" ~
+        as.character(DredgingSourceWind_HS)
     ),
     
     location = factor(
       location,
       levels = c("South", "HS")
+    ),
+    
+    ActivitySourceWind = factor(
+      ActivitySourceWind,
+      levels = c("NonSource", "Source")
     )
   ) %>%
   filter(
-    !is.na(concentration),
-    !is.na(air_temp_C)
+    !is.na(PCB),
+    !is.na(flow_cfs),
+    !is.na(ActivitySourceWind)
   )
 
-pcb_long_cov <- pcb_long_cov %>%
-  mutate(
-    HistoricalSourceWind = factor(
-      HistoricalSourceWind,
-      levels = c("NonSource", "Source")
-    )
-  )
-
-ggplot(
-  pcb_long_cov,
+plot.flow.PCB <- ggplot(
+  flow_dat,
   aes(
-    x = air_temp_C,
-    y = concentration,
-    color = activity
+    x = flow_cfs,
+    y = PCB,
+    color = ActivitySourceWind
   )
 ) +
   geom_point(
-    alpha = 0.20,
-    size = 0.8
+    alpha = 0.40,
+    size = 1.6
   ) +
-  geom_smooth(
-    method = "loess",
-    se = FALSE,
-    linewidth = 0.9
+  geom_vline(
+    xintercept = 0,
+    linetype = "dashed"
   ) +
   facet_grid(
-    PCB ~ location,
-    scales = "free_y"
+    location ~ activity
   ) +
   scale_y_log10() +
   labs(
-    x = "Air temperature (°C)",
-    y = "PCB concentration",
-    color = "Activity") +
-  theme_bw(base_size = 12) +
-  theme(
-    legend.position = "bottom"
-  )
-
-idle_wind <- pcb_long_cov %>%
-  filter(
-    activity == "Idle",
-    !is.na(wind_direction),
-    !is.na(wind_speed),
-    concentration > 0
-  )
-
-ggplot(
-  idle_wind,
-  aes(
-    x = wind_direction,
-    y = wind_speed,
-    color = log10(concentration)
-  )
-) +
-  geom_point(
-    alpha = 0.65,
-    size = 1.5
-  ) +
-  facet_grid(
-    PCB ~ location
-  ) +
-  scale_x_continuous(
-    breaks = c(0, 90, 180, 270, 360),
-    limits = c(0, 360)
-  ) +
-  labs(
-    x = "Wind direction (degrees)",
-    y = "Wind speed",
-    color = expression(log[10](PCB))) +
-  theme_bw(base_size = 12)
-
-idle_pcb8 <- idle_wind %>%
-  filter(PCB == "PCB8")
-
-idle_pcb8 <- idle_pcb8 %>%
-  group_by(location) %>%
-  mutate(
-    pcb_group = case_when(
-      concentration >= quantile(concentration, 0.90, na.rm = TRUE) ~
-        "High (top 10%)",
-      
-      concentration >= quantile(concentration, 0.75, na.rm = TRUE) ~
-        "Elevated (75–90%)",
-      
-      TRUE ~ "Typical (<75%)"
-    )
-  ) %>%
-  ungroup()
-
-ggplot(
-  idle_pcb8,
-  aes(
-    x = wind_direction,
-    y = wind_speed,
-    color = pcb_group
-  )
-) +
-  geom_point(
-    alpha = 0.75,
-    size = 2
-  ) +
-  coord_polar(
-    theta = "x",
-    start = 0,
-    direction = 1
-  ) +
-  facet_wrap(~ location) +
-  scale_x_continuous(
-    limits = c(0, 360),
-    breaks = c(0, 90, 180, 270),
-    labels = c("N", "E", "S", "W")
-  ) +
-  labs(
-    x = NULL,
-    y = "Wind speed",
-    color = "PCB8 level") +
-  theme_bw(base_size = 12)
-
-idle_pcb8 %>%
-  count(location, HistoricalSourceWind, pcb_group) %>%
-  group_by(location, HistoricalSourceWind) %>%
-  mutate(
-    proportion = n / sum(n)
-  ) %>%
-  filter(pcb_group == "High (top 10%)") %>%
-  select(
-    location,
-    HistoricalSourceWind,
-    n,
-    proportion
-  )
-
-idle_all <- idle_wind %>%
-  group_by(PCB, location) %>%
-  mutate(
-    high_PCB =
-      concentration >=
-      quantile(
-        concentration,
-        0.90,
-        na.rm = TRUE
-      )
-  ) %>%
-  ungroup()
-
-high_summary <- idle_all %>%
-  count(
-    PCB,
-    location,
-    HistoricalSourceWind,
-    high_PCB
-  ) %>%
-  group_by(
-    PCB,
-    location,
-    HistoricalSourceWind
-  ) %>%
-  mutate(
-    proportion = n / sum(n)
-  ) %>%
-  filter(high_PCB) %>%
-  select(
-    PCB,
-    location,
-    HistoricalSourceWind,
-    n,
-    proportion
-  )
-
-high_summary
-
-ggplot(
-  high_summary,
-  aes(
-    x = PCB,
-    y = proportion,
-    color = HistoricalSourceWind,
-    group = HistoricalSourceWind
-  )
-) +
-  geom_point(size = 3) +
-  geom_line(linewidth = 0.8) +
-  facet_wrap(~ location) +
-  scale_y_continuous(
-    labels = scales::percent_format(accuracy = 1)
-  ) +
-  labs(
-    x = NULL,
-    y = "Proportion classified as high PCB",
-    color = "Historical source wind",
-    title = "High PCB concentrations during Idle conditions",
-    subtitle = "High = top 10% of concentrations within each PCB and location"
-  ) +
-  theme_bw(base_size = 13) +
-  theme(
-    legend.position = "bottom"
-  )
-
-idle_sample_conditions <- dataset %>%
-  filter(activity == "Idle") %>%
-  select(
-    date,
-    air_temp,
-    wind_speed,
-    PCB8_South,
-    PCB8_HS,
-    HistoricalSourceWind_South,
-    HistoricalSourceWind_HS
-  ) %>%
-  pivot_longer(
-    cols = c(PCB8_South, PCB8_HS),
-    names_to = "location",
-    values_to = "PCB8"
-  ) %>%
-  mutate(
-    HistoricalSourceWind = case_when(
-      location == "PCB8_South" ~
-        as.character(HistoricalSourceWind_South),
-      location == "PCB8_HS" ~
-        as.character(HistoricalSourceWind_HS)
-    ),
-    
-    location = recode(
-      location,
-      PCB8_South = "South",
-      PCB8_HS = "HS"
-    ),
-    
-    air_temp_C = air_temp - 273.15
-  ) %>%
-  filter(
-    !is.na(PCB8),
-    !is.na(HistoricalSourceWind)
-  )
-
-idle_sample_conditions %>%
-  group_by(location, HistoricalSourceWind) %>%
-  summarise(
-    n = n(),
-    mean_temp_C = mean(air_temp_C, na.rm = TRUE),
-    median_temp_C = median(air_temp_C, na.rm = TRUE),
-    mean_wind_speed = mean(wind_speed, na.rm = TRUE),
-    median_wind_speed = median(wind_speed, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-idle_south_pcb8 <- pcb_long_cov %>%
-  filter(
-    activity == "Idle",
-    location == "South",
-    PCB == "PCB8",
-    !is.na(concentration),
-    !is.na(air_temp_C),
-    !is.na(wind_speed),
-    !is.na(HistoricalSourceWind)
-  )
-
-m_idle_south_pcb8 <- lm(
-  log10(concentration) ~
-    HistoricalSourceWind +
-    air_temp_C +
-    wind_speed,
-  data = idle_south_pcb8
-)
-
-summary(m_idle_south_pcb8)
-
-pred <- ggpredict(
-  m_idle_south_pcb8,
-  terms = "HistoricalSourceWind"
-)
-
-pred
-plot(pred)
-
-par(mfrow = c(2, 2))
-plot(m_idle_south_pcb8)
-par(mfrow = c(1, 1))
-
-ggplot(
-  idle_south_pcb8,
-  aes(
-    x = air_temp_C,
-    y = residuals(m_idle_south_pcb8)
-  )
-) +
-  geom_point(alpha = 0.35) +
-  geom_smooth(
-    method = "loess",
-    se = TRUE
-  ) +
-  geom_hline(
-    yintercept = 0,
-    linetype = 2
-  ) +
-  labs(
-    x = "Air temperature (°C)",
-    y = "Model residual",
-    title = "Residuals versus air temperature"
-  ) +
-  theme_bw()
-
-ggplot(
-  idle_south_pcb8,
-  aes(
-    x = wind_speed,
-    y = residuals(m_idle_south_pcb8)
-  )
-) +
-  geom_point(alpha = 0.35) +
-  geom_smooth(
-    method = "loess",
-    se = TRUE
-  ) +
-  geom_hline(
-    yintercept = 0,
-    linetype = 2
-  ) +
-  labs(
-    x = "Wind speed",
-    y = "Model residual",
-    title = "Residuals versus wind speed"
-  ) +
-  theme_bw()
-
-m_idle_south_pcb8_quad <- lm(
-  log10(concentration) ~
-    HistoricalSourceWind +
-    air_temp_C +
-    I(air_temp_C^2) +
-    wind_speed,
-  data = idle_south_pcb8
-)
-
-anova(
-  m_idle_south_pcb8,
-  m_idle_south_pcb8_quad
-)
-
-AIC(
-  m_idle_south_pcb8,
-  m_idle_south_pcb8_quad
-)
-
-summary(m_idle_south_pcb8_quad)
-
-10^coef(m_idle_south_pcb8_quad)[
-  "HistoricalSourceWindSource"
-]
-
-10^confint(m_idle_south_pcb8_quad)[
-  "HistoricalSourceWindSource",
-]
-
-
-idle_models <- pcb_long_cov %>%
-  filter(
-    activity == "Idle",
-    concentration > 0,
-    !is.na(concentration),
-    !is.na(air_temp_C),
-    !is.na(wind_speed),
-    !is.na(HistoricalSourceWind)
-  ) %>%
-  group_by(PCB, location) %>%
-  nest() %>%
-  mutate(
-    model = map(
-      data,
-      ~ lm(
-        log10(concentration) ~
-          HistoricalSourceWind +
-          air_temp_C +
-          I(air_temp_C^2) +
-          wind_speed,
-        data = .x
-      )
-    )
-  )
-
-
-
-
-source_effects <- idle_models %>%
-  mutate(
-    tidy_model = map(
-      model,
-      ~ tidy(.x, conf.int = TRUE)
-    )
-  ) %>%
-  select(PCB, location, tidy_model) %>%
-  unnest(tidy_model) %>%
-  filter(
-    term == "HistoricalSourceWindSource"
-  ) %>%
-  mutate(
-    ratio = 10^estimate,
-    ratio_low = 10^conf.low,
-    ratio_high = 10^conf.high,
-    percent_change = (ratio - 1) * 100,
-    percent_low = (ratio_low - 1) * 100,
-    percent_high = (ratio_high - 1) * 100
-  )
-
-source_effects %>%
-  select(
-    PCB,
-    location,
-    ratio,
-    ratio_low,
-    ratio_high,
-    percent_change,
-    p.value
-  )
-
-ggplot(
-  source_effects,
-  aes(
-    x = ratio,
-    y = PCB
-  )
-) +
-  geom_vline(
-    xintercept = 1,
-    linetype = 2
-  ) +
-  geom_errorbarh(
-    aes(
-      xmin = ratio_low,
-      xmax = ratio_high
-    ),
-    height = 0.15
-  ) +
-  geom_point(
-    size = 3
-  ) +
-  facet_wrap(~ location) +
-  labs(
-    x = "Adjusted Source / NonSource concentration ratio",
-    y = NULL,
-    title = "Historical-source wind association during Idle",
-    subtitle =
-      "Adjusted for air temperature (quadratic) and wind speed"
+    x = "Flow (cfs)",
+    y = paste0(PCB, " concentration"),
+    color = "Source wind"
   ) +
   theme_bw(base_size = 13)
+
+plot.flow.PCB
+
+ggsave(
+  paste0(
+    "Output/Plots/Concentrations/WaterFlow/", PCB, "FlowCFS",
+    ".png"
+  ),
+  plot = plot.flow.PCB,
+  width = 12,
+  height = 8,
+  dpi = 500,
+  bg = "white"
+)
+
+# Turbidity Plots ---------------------------------------------------------
+# Select PCB
+# PCB <- "PCB8"
+# PCB <- "PCB15"
+# PCB <- "PCB18.30"
+# PCB <- "PCB20.28"
+# PCB <- "PCB31"
+
+PCB <- "PCB31"
+
+turb_dat <- dataset %>%
+  select(
+    date,
+    activity,
+    turb_FNU,
+    
+    all_of(paste0(PCB, "_South")),
+    all_of(paste0(PCB, "_HS")),
+    
+    HistoricalSourceWind_South,
+    HistoricalSourceWind_HS,
+    
+    ConstructionSourceWind_South,
+    ConstructionSourceWind_HS,
+    
+    DredgingSourceWind_South,
+    DredgingSourceWind_HS
+  ) %>%
+  pivot_longer(
+    cols = all_of(c(
+      paste0(PCB, "_South"),
+      paste0(PCB, "_HS")
+    )),
+    names_to = "location",
+    values_to = "PCB"
+  ) %>%
+  mutate(
+    location = if_else(
+      endsWith(location, "_South"),
+      "South",
+      "HS"
+    ),
+    
+    ActivitySourceWind = case_when(
+      activity == "Idle" &
+        location == "South" ~
+        as.character(HistoricalSourceWind_South),
+      
+      activity == "Idle" &
+        location == "HS" ~
+        as.character(HistoricalSourceWind_HS),
+      
+      activity == "Construction" &
+        location == "South" ~
+        as.character(ConstructionSourceWind_South),
+      
+      activity == "Construction" &
+        location == "HS" ~
+        as.character(ConstructionSourceWind_HS),
+      
+      activity == "Dredging" &
+        location == "South" ~
+        as.character(DredgingSourceWind_South),
+      
+      activity == "Dredging" &
+        location == "HS" ~
+        as.character(DredgingSourceWind_HS)
+    ),
+    
+    location = factor(
+      location,
+      levels = c("South", "HS")
+    ),
+    
+    ActivitySourceWind = factor(
+      ActivitySourceWind,
+      levels = c("NonSource", "Source")
+    )
+  ) %>%
+  filter(
+    !is.na(PCB),
+    !is.na(turb_FNU),
+    !is.na(ActivitySourceWind)
+  )
+
+plot.turb.PCB <- ggplot(
+  turb_dat,
+  aes(
+    x = turb_FNU,
+    y = PCB,
+    color = ActivitySourceWind
+  )
+) +
+  geom_point(
+    alpha = 0.40,
+    size = 1.6
+  ) +
+  facet_grid(
+    location ~ activity
+  ) +
+  scale_y_log10() +
+  labs(
+    x = "Turbidity (FNU)",
+    y = paste0(PCB, " concentration"),
+    color = "Source wind"
+  ) +
+  theme_bw(base_size = 13)
+
+plot.turb.PCB
+
+ggsave(
+  paste0(
+    "Output/Plots/Concentrations/Turbidity/", PCB,"TurbidityFNU",
+    ".png"
+  ),
+  plot = plot.turb.PCB,
+  width = 12,
+  height = 8,
+  dpi = 500,
+  bg = "white"
+)
 

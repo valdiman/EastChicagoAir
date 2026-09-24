@@ -60,10 +60,18 @@ dir.create("Output/PUFPASModel/Vef/MERRA")
 # Output/Plots
 dir.create("Output/Plots")
 dir.create("Output/Plots/Concentrations")
+dir.create("Output/Plots/Concentrations/Activities")
+dir.create("Output/Plots/Concentrations/day_of_year")
+dir.create("Output/Plots/Concentrations/WaterFlow")
+dir.create("Output/Plots/Concentrations/Temperature")
+dir.create("Output/Plots/Concentrations/WaterTemperature")
+dir.create("Output/Plots/Concentrations/Turbidity")
+dir.create("Output/Plots/Concentrations/WindSpeed")
+dir.create("Output/Plots/Concentrations/WindRoseStyle")
 dir.create("Output/Plots/CorrelationAnalysis")
 dir.create("Output/Plots/Extra")
 dir.create("Output/Plots/MeteoComparison")
 dir.create("Output/Plots/PartialPressure")
-dir.create("Output/Plots/WindRoseStyle")
+
 
 
