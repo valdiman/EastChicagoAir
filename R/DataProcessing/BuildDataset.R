@@ -156,7 +156,7 @@ final_data <- final_data %>%
 # or Dredging.
 #
 # Source sectors:
-# South: 35.64° - 121.94°
+# South: 35.64° - 121.94°Revision 2 = 39.82° - 270.77°
 #
 # HS: 352.16° - 96.12°(wraps across 0°)
 
@@ -170,8 +170,8 @@ final_data <- final_data %>%
       
       between(
         wind_direction,
-        35.64,
-        121.94
+        39.82,
+        270.77
       ) ~
         "Source",
       
